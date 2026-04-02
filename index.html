@@ -1,0 +1,2626 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>献立プランナー v3</title>
+<style>
+  :root {
+    --primary: #4a7c59;
+    --primary-light: #6a9e78;
+    --primary-dark: #365a40;
+    --accent: #e8a838;
+    --accent-light: #f5c56b;
+    --bg: #faf8f5;
+    --card: #ffffff;
+    --text: #2d2d2d;
+    --text-light: #6b6b6b;
+    --border: #e0ddd8;
+    --danger: #c0392b;
+    --success: #27ae60;
+    --kagome: #e74c3c;
+    --ajinomoto: #e67e22;
+    --kikkoman: #8e44ad;
+    --shirogohan: #795548;
+    --hotcook: #e91e63;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN','Noto Sans JP','メイリオ',sans-serif;
+    background: var(--bg); color: var(--text); min-height:100vh;
+  }
+
+  /* ヘッダー */
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white; padding:16px 20px; text-align:center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    position:sticky; top:0; z-index:100;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  header .title-section { flex:1; }
+  header h1 { font-size:1.3rem; letter-spacing:.05em; }
+  header p { font-size:.75rem; opacity:.85; margin-top:2px; }
+  .settings-btn {
+    background:rgba(255,255,255,.2); border:none; color:white;
+    width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.2rem;
+  }
+  .settings-btn:hover { background:rgba(255,255,255,.3); }
+
+  /* タブ */
+  .tabs {
+    display:flex; background:var(--card); border-bottom:2px solid var(--border);
+    position:sticky; top:60px; z-index:99; overflow-x:auto; overflow-y:hidden;
+  }
+  .tab-btn {
+    flex:1; min-width:0; padding:10px 4px; border:none; background:none;
+    font-size:.72rem; font-weight:600; color:var(--text-light); cursor:pointer;
+    border-bottom:3px solid transparent; white-space:nowrap;
+  }
+  .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); background:rgba(74,124,89,.05); }
+  .tab-btn:hover { background:rgba(74,124,89,.05); }
+  .tab-content { display:none; padding:16px; max-width:900px; margin:0 auto; }
+  .tab-content.active { display:block; }
+
+  /* カード */
+  .card {
+    background:var(--card); border-radius:12px; padding:16px; margin-bottom:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08); border:1px solid var(--border);
+  }
+  .card h3 { font-size:.95rem; margin-bottom:12px; }
+
+  /* ボタン */
+  .btn {
+    padding:10px 16px; border:none; border-radius:8px; font-size:.85rem;
+    font-weight:600; cursor:pointer; transition:.2s; text-align:center;
+    background:linear-gradient(135deg, var(--primary), var(--primary-light)); color:white;
+  }
+  .btn:hover { box-shadow:0 4px 12px rgba(74,124,89,.3); }
+  .btn:active { transform:scale(.97); }
+  .btn-sm { padding:8px 12px; font-size:.8rem; }
+  .btn-outline { background:none; color:var(--primary); border:2px solid var(--primary); }
+  .btn-outline:hover { background:rgba(74,124,89,.1); box-shadow:none; }
+  .btn-outline.active { background:var(--primary); color:white; }
+  .btn-danger { background:var(--danger); }
+
+  /* フォーム */
+  input,textarea,select {
+    width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;
+    font-size:.9rem; font-family:inherit; margin-bottom:8px;
+  }
+  input:focus,textarea:focus,select:focus {
+    outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(74,124,89,.1);
+  }
+
+  /* ========== 週間献立ボード ========== */
+  .week-board { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; }
+  .day-column {
+    min-width:130px; flex:1; background:var(--card); border:1px solid var(--border);
+    border-radius:10px; padding:10px; display:flex; flex-direction:column;
+  }
+  .day-header {
+    text-align:center; font-weight:700; font-size:.85rem; padding:6px;
+    border-radius:6px; margin-bottom:8px; color:white;
+    background:linear-gradient(135deg, var(--primary), var(--primary-light));
+  }
+  .day-header.today { background:linear-gradient(135deg, var(--accent), var(--accent-light)); }
+  .day-header.sun { background:linear-gradient(135deg, #c0392b, #e74c3c); }
+  .day-header.sat { background:linear-gradient(135deg, #2980b9, #3498db); }
+  .slot-section { margin-bottom:8px; }
+  .slot-label {
+    font-size:.7rem; font-weight:600; color:var(--text-light);
+    margin-bottom:4px; text-transform:uppercase; letter-spacing:.03em;
+  }
+  .slot-item {
+    background:var(--bg); padding:6px 8px; border-radius:6px; font-size:.78rem;
+    margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;
+    border-left:3px solid var(--accent); cursor:pointer; transition:.15s;
+  }
+  .slot-item:hover { background:#f0ede8; }
+  .slot-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .slot-item .remove-btn {
+    background:var(--danger); color:white; border:none; width:18px; height:18px;
+    border-radius:4px; cursor:pointer; font-size:.65rem; flex-shrink:0; margin-left:4px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .slot-empty {
+    border:1px dashed var(--border); border-radius:6px; padding:8px; text-align:center;
+    font-size:.72rem; color:#bbb; cursor:pointer;
+  }
+  .slot-empty:hover { border-color:var(--primary); color:var(--primary); }
+  .day-lock {
+    font-size:.7rem; text-align:center; margin-top:auto; padding-top:6px;
+    border-top:1px solid var(--border);
+  }
+  .day-lock label { cursor:pointer; color:var(--text-light); }
+  .day-lock input { width:auto; margin:0 4px 0 0; }
+
+  /* ========== レシピカード ========== */
+  .recipe-grid { display:grid; grid-template-columns:1fr; gap:10px; }
+  .recipe-card {
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:12px; cursor:pointer; transition:.2s;
+  }
+  .recipe-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.12); border-color:var(--primary); }
+  .recipe-card.ng-recipe { opacity:.55; border-color:#e74c3c; background:repeating-linear-gradient(135deg,var(--card),var(--card) 10px,rgba(231,76,60,.04) 10px,rgba(231,76,60,.04) 20px); }
+  .recipe-title { font-weight:600; font-size:.95rem; margin-bottom:4px; }
+  .recipe-meta { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
+  .recipe-tag {
+    background:rgba(74,124,89,.1); color:var(--primary); padding:2px 8px;
+    border-radius:4px; font-size:.72rem;
+  }
+  .recipe-tag.cat { background:rgba(232,168,56,.15); color:#b87d1a; }
+  .recipe-tag.time { background:rgba(41,128,185,.1); color:#2980b9; }
+  .recipe-tag.src-kagome { background:rgba(231,76,60,.12); color:var(--kagome); }
+  .recipe-tag.src-ajinomoto { background:rgba(230,126,34,.12); color:var(--ajinomoto); }
+  .recipe-tag.src-kikkoman { background:rgba(142,68,173,.12); color:var(--kikkoman); }
+  .recipe-tag.src-shirogohan { background:rgba(121,85,72,.12); color:var(--shirogohan); }
+  .recipe-desc { font-size:.82rem; color:var(--text-light); line-height:1.4; }
+  .recipe-actions { display:flex; gap:6px; margin-top:8px; }
+  .site-link {
+    display:inline-flex; align-items:center; gap:4px; font-size:.72rem;
+    color:var(--primary); text-decoration:none; margin-top:4px;
+  }
+  .site-link:hover { text-decoration:underline; }
+
+  /* ========== タイムライン ========== */
+  .timeline-container { overflow-x:auto; }
+  .gantt-wrapper { position:relative; min-width:600px; }
+  .gantt-header { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .gantt-total { font-size:.95rem; font-weight:700; color:var(--primary); }
+  .gantt-saved { font-size:.82rem; color:var(--success); font-weight:600; }
+  .gantt-legend { display:flex; gap:8px; flex-wrap:wrap; margin-left:auto; }
+  .gantt-legend-item { display:flex; align-items:center; gap:4px; font-size:.72rem; color:var(--text-light); }
+  .gantt-legend-color { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+  .gantt-time-axis { display:flex; margin-left:90px; position:relative; height:20px; }
+  .gantt-time-mark { position:absolute; font-size:.65rem; color:var(--text-light); transform:translateX(-50%); }
+  .gantt-row { display:flex; align-items:stretch; margin-bottom:6px; min-height:52px; }
+  .gantt-label {
+    width:84px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(74,124,89,.06); border:1px solid var(--border); border-radius:6px;
+    font-size:.75rem; font-weight:600; color:var(--text-light); margin-right:6px; text-align:center; padding:4px;
+  }
+  .gantt-track {
+    flex:1; position:relative; background:rgba(0,0,0,.02); border-radius:6px;
+    border:1px solid rgba(0,0,0,.04); min-height:50px;
+  }
+  .gantt-block {
+    position:absolute; top:4px; bottom:4px; border-radius:5px;
+    padding:4px 8px; font-size:.72rem; color:white; cursor:pointer;
+    display:flex; flex-direction:column; justify-content:center; overflow:hidden;
+    transition:box-shadow .2s,transform .15s; box-shadow:0 1px 3px rgba(0,0,0,.15); line-height:1.3;
+  }
+  .gantt-block:hover { box-shadow:0 3px 10px rgba(0,0,0,.25); transform:translateY(-1px); z-index:5; }
+  .gantt-block-title { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:.7rem; }
+  .gantt-block-desc { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:.9; font-size:.65rem; }
+  .gantt-block-time { font-size:.6rem; opacity:.75; margin-top:1px; }
+  .gantt-block.idle {
+    background:repeating-linear-gradient(45deg,rgba(0,0,0,.05),rgba(0,0,0,.05) 4px,transparent 4px,transparent 8px) !important;
+    box-shadow:none; border:1px dashed rgba(0,0,0,.15);
+  }
+  .gantt-block.idle .gantt-block-title { color:var(--text-light); font-weight:400; }
+
+  /* ステップリスト */
+  .step-list-title { font-size:.9rem; font-weight:700; color:var(--primary); margin-bottom:10px; }
+  .step-card {
+    display:flex; gap:10px; padding:10px 12px; margin-bottom:6px;
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    border-left:4px solid var(--primary); transition:.15s;
+  }
+  .step-card:hover { background:#f0ede8; }
+  .step-card.parallel-indicator {
+    background:rgba(232,168,56,.08); border-left-color:var(--accent);
+  }
+  .step-time-badge {
+    flex-shrink:0; width:52px; text-align:center;
+    background:var(--primary); color:white; border-radius:6px;
+    padding:4px 0; font-size:.72rem; font-weight:600;
+    display:flex; flex-direction:column; justify-content:center; line-height:1.2;
+  }
+  .step-time-badge .t-start { font-size:.85rem; }
+  .step-time-badge .t-dur { font-size:.6rem; opacity:.8; }
+  .step-body { flex:1; min-width:0; }
+  .step-recipe-name { font-size:.72rem; font-weight:600; color:var(--primary-dark); margin-bottom:2px; }
+  .step-text { font-size:.82rem; color:var(--text); line-height:1.4; }
+  .step-resource-tag {
+    display:inline-block; font-size:.65rem; background:rgba(74,124,89,.1);
+    color:var(--primary-dark); padding:1px 6px; border-radius:4px; margin-top:3px;
+  }
+  .step-parallel-tag {
+    display:inline-block; font-size:.65rem; background:rgba(232,168,56,.15);
+    color:#b87d1a; padding:1px 6px; border-radius:4px; margin-top:3px; margin-left:4px;
+  }
+  .view-toggle-btns { display:flex; gap:6px; margin-bottom:12px; }
+  .view-toggle-btn {
+    padding:6px 14px; border:1px solid var(--border); border-radius:6px;
+    background:white; font-size:.8rem; cursor:pointer; transition:.15s;
+  }
+  .view-toggle-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
+
+  /* 効率サマリー */
+  .efficiency-card {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px;
+    margin-bottom:12px;
+  }
+  .efficiency-stat {
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:10px; text-align:center;
+  }
+  .efficiency-stat .stat-label { font-size:.7rem; color:var(--text-light); margin-bottom:2px; }
+  .efficiency-stat .stat-value { font-size:1.1rem; font-weight:700; color:var(--primary); }
+  .efficiency-stat .stat-sub { font-size:.65rem; color:var(--text-light); }
+
+  /* ========== 買い物リスト ========== */
+  .shopping-item {
+    display:flex; align-items:center; padding:10px 12px; background:var(--card);
+    border:1px solid var(--border); border-radius:8px; margin-bottom:6px; gap:10px;
+  }
+  .shopping-item.checked { opacity:.5; text-decoration:line-through; }
+  .shopping-item input[type="checkbox"] { width:auto; margin:0; cursor:pointer; }
+  .shopping-item-content { flex:1; }
+  .shopping-item-name { font-weight:600; font-size:.88rem; }
+  .shopping-item-qty { font-size:.78rem; color:var(--text-light); }
+  .shopping-item-source { font-size:.72rem; color:#999; }
+  .shopping-item .remove-btn {
+    background:var(--danger); color:white; border:none; width:26px; height:26px;
+    border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ========== 栄養チャート ========== */
+  .nutrition-summary {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;
+  }
+  .nutrition-card {
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:12px; text-align:center;
+  }
+  .nutrition-card .label { font-size:.75rem; color:var(--text-light); margin-bottom:4px; }
+  .nutrition-card .value { font-size:1.3rem; font-weight:700; }
+  .nutrition-card .bar {
+    height:6px; background:var(--border); border-radius:3px; margin-top:6px; overflow:hidden;
+  }
+  .nutrition-card .bar-fill { height:100%; border-radius:3px; transition:width .5s; }
+  .nutrition-alert {
+    padding:10px 14px; border-radius:8px; font-size:.82rem; margin-bottom:8px;
+    border-left:4px solid;
+  }
+  .nutrition-alert.warn { background:#fff3cd; border-color:#ffc107; color:#856404; }
+  .nutrition-alert.good { background:#d4edda; border-color:#28a745; color:#155724; }
+
+  /* ========== モーダル ========== */
+  .modal {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.4);
+    z-index:300; align-items:center; justify-content:center;
+  }
+  .modal.show { display:flex; }
+  .modal-content {
+    background:white; border-radius:14px; padding:24px; width:92%;
+    max-width:500px; max-height:85vh; overflow-y:auto;
+    box-shadow:0 8px 24px rgba(0,0,0,.2); position:relative;
+  }
+  .modal-title { font-size:1rem; font-weight:700; margin-bottom:16px; }
+  .modal-close {
+    position:absolute; top:12px; right:12px; background:none;
+    border:none; font-size:1.5rem; cursor:pointer; color:var(--text-light);
+  }
+
+  /* スロットモーダル: ソースタブ */
+  .source-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px; }
+  .source-tab {
+    padding:5px 10px; border:1px solid var(--border); border-radius:6px;
+    background:white; font-size:.75rem; cursor:pointer; transition:.15s;
+  }
+  .source-tab.active { background:var(--primary); color:white; border-color:var(--primary); }
+  .source-tab[data-src="kagome"].active { background:var(--kagome); border-color:var(--kagome); }
+  .source-tab[data-src="ajinomoto"].active { background:var(--ajinomoto); border-color:var(--ajinomoto); }
+  .source-tab[data-src="kikkoman"].active { background:var(--kikkoman); border-color:var(--kikkoman); }
+  .source-tab[data-src="shirogohan"].active { background:var(--shirogohan); border-color:var(--shirogohan); }
+  .source-tab[data-src="hotcook"].active { background:var(--hotcook); border-color:var(--hotcook); }
+
+  /* トースト */
+  .toast {
+    position:fixed; bottom:20px; left:20px; right:20px; background:var(--primary);
+    color:white; padding:14px 20px; border-radius:8px;
+    box-shadow:0 4px 12px rgba(0,0,0,.15); display:none; z-index:1000;
+    animation:slideUp .3s ease-out; font-size:.88rem;
+  }
+  .toast.show { display:block; }
+  @keyframes slideUp {
+    from { transform:translateY(100%); opacity:0; }
+    to { transform:translateY(0); opacity:1; }
+  }
+
+  /* 空状態 */
+  .empty-state { text-align:center; padding:40px 20px; color:var(--text-light); }
+  .empty-state .icon { font-size:3rem; margin-bottom:12px; opacity:.5; }
+  .empty-state p { line-height:1.6; }
+
+  /* レスポンシブ */
+  @media (max-width:600px) {
+    .tab-btn { padding:8px 2px; font-size:.65rem; }
+    header { padding:12px 16px; }
+    header h1 { font-size:1.1rem; }
+    .week-board { flex-direction:column; }
+    .day-column { min-width:auto; }
+    .nutrition-summary { grid-template-columns:1fr; }
+  }
+  @media (min-width:601px) {
+    .recipe-grid { grid-template-columns:1fr 1fr; }
+  }
+
+  /* 週間サマリー */
+  .week-summary-grid {
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));
+    gap:8px;
+  }
+  .day-summary-card {
+    background:var(--bg); border:1px solid var(--border); border-radius:10px;
+    padding:10px; text-align:center; cursor:pointer; transition:.2s;
+    position:relative;
+  }
+  .day-summary-card:hover { box-shadow:0 2px 8px rgba(0,0,0,.1); transform:translateY(-1px); }
+  .day-summary-card .day-name {
+    font-weight:700; font-size:.85rem; margin-bottom:6px; padding:3px 8px;
+    border-radius:6px; color:white; display:inline-block;
+  }
+  .day-summary-card .summary-stat { font-size:.75rem; color:var(--text-light); margin:3px 0; }
+  .day-summary-card .summary-stat strong { color:var(--text); font-size:.9rem; }
+  .day-summary-card .summary-bar {
+    height:4px; border-radius:2px; background:var(--border); margin-top:6px; overflow:hidden;
+  }
+  .day-summary-card .summary-bar-fill {
+    height:100%; border-radius:2px; transition:.3s;
+  }
+  .day-summary-card.rank-1 { border-color:var(--success); border-width:2px; }
+  .day-summary-card.rank-1::after {
+    content:'👑'; position:absolute; top:-8px; right:-4px; font-size:.9rem;
+  }
+  .week-summary-totals {
+    display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; padding:10px;
+    background:rgba(74,124,89,.05); border-radius:8px; font-size:.8rem;
+    justify-content:center;
+  }
+  .week-summary-totals span { white-space:nowrap; }
+  .week-summary-totals strong { color:var(--primary); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-section">
+    <h1>🍽️ 献立プランナー</h1>
+    <p>毎日の食卓を簡単に</p>
+  </div>
+  <button class="settings-btn" onclick="openSettings()">⚙️</button>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('week',this)">📅 週間献立</button>
+  <button class="tab-btn" onclick="switchTab('recipes',this)">📖 レシピ</button>
+  <button class="tab-btn" onclick="switchTab('cooking',this)">⏱️ 調理</button>
+  <button class="tab-btn" onclick="switchTab('shopping',this)">🛒 買物</button>
+  <button class="tab-btn" onclick="switchTab('nutrition',this)">📊 栄養</button>
+</div>
+
+<!-- ===== 週間献立タブ ===== -->
+<div id="tab-week" class="tab-content active">
+  <div class="card">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+      <h3 style="margin:0;flex:1">週間献立</h3>
+      <button class="btn btn-sm" onclick="autoGenerateWeek()">🎲 自動生成</button>
+      <button class="btn btn-sm btn-outline" onclick="clearWeekPlan()">クリア</button>
+    </div>
+    <div id="week-board" class="week-board"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="generateShoppingFromWeek()">🛒 買い物リストを生成</button>
+      <select id="cooking-day-select" style="flex:1;min-width:120px" onchange="selectCookingDay()">
+        <option value="">調理する日を選択...</option>
+      </select>
+      <button class="btn btn-sm" onclick="goToCooking()">⏱️ 調理タイムラインへ</button>
+    </div>
+  </div>
+
+  <!-- 週間調理サマリー -->
+  <div class="card">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+      <h3 style="margin:0;flex:1">📊 週間調理サマリー</h3>
+      <select id="week-sort" style="width:auto;min-width:130px;margin:0;font-size:.82rem" onchange="renderWeekSummary()">
+        <option value="day">📅 曜日順</option>
+        <option value="active-asc">👩‍🍳 手間が少ない順</option>
+        <option value="active-desc">👩‍🍳 手間が多い順</option>
+        <option value="total-asc">⏱️ 調理時間が短い順</option>
+        <option value="total-desc">⏱️ 調理時間が長い順</option>
+        <option value="saving-desc">🚀 時短効果が大きい順</option>
+      </select>
+      <button class="btn btn-sm btn-outline" onclick="calcWeekSummary()">再計算</button>
+    </div>
+    <div id="week-summary" style="font-size:.82rem;color:var(--text-light);text-align:center;padding:12px">
+      「再計算」を押すと各日の調理効率を分析します
+    </div>
+  </div>
+</div>
+
+<!-- ===== レシピタブ ===== -->
+<div id="tab-recipes" class="tab-content">
+  <div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="text" id="recipe-search" placeholder="レシピを検索..." oninput="filterRecipes()" style="flex:1;margin:0">
+      <button class="btn btn-sm" onclick="openRecipeModal()">+ 追加</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="recipe-filters">
+      <button class="btn-outline btn-sm active" onclick="filterBySource('all',this)">すべて</button>
+      <button class="btn-outline btn-sm" onclick="filterBySource('basic',this)">基本</button>
+      <button class="btn-outline btn-sm" onclick="filterBySource('akari',this)">あかり</button>
+      <button class="btn-outline btn-sm" style="border-color:var(--kagome);color:var(--kagome)" onclick="filterBySource('kagome',this)">カゴメ</button>
+      <button class="btn-outline btn-sm" style="border-color:var(--ajinomoto);color:var(--ajinomoto)" onclick="filterBySource('ajinomoto',this)">味の素</button>
+      <button class="btn-outline btn-sm" style="border-color:var(--kikkoman);color:var(--kikkoman)" onclick="filterBySource('kikkoman',this)">キッコーマン</button>
+      <button class="btn-outline btn-sm" style="border-color:var(--shirogohan);color:var(--shirogohan)" onclick="filterBySource('shirogohan',this)">白ごはん</button>
+      <button class="btn-outline btn-sm" style="border-color:var(--hotcook);color:var(--hotcook)" onclick="filterBySource('hotcook',this)">ホットクック</button>
+      <button class="btn-outline btn-sm" onclick="filterBySource('my',this)">マイレシピ</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="category-filters">
+      <button class="btn-outline btn-sm active" onclick="filterByCategory('all',this)">すべて</button>
+      <button class="btn-outline btn-sm" onclick="filterByCategory('主菜',this)">🥩 主菜</button>
+      <button class="btn-outline btn-sm" onclick="filterByCategory('副菜',this)">🥗 副菜</button>
+      <button class="btn-outline btn-sm" onclick="filterByCategory('汁物',this)">🍲 汁物</button>
+      <button class="btn-outline btn-sm" onclick="filterByCategory('サラダ',this)">🥬 サラダ</button>
+      <button class="btn-outline btn-sm" onclick="filterByCategory('主食',this)">🍚 主食</button>
+    </div>
+    <div id="recipe-list" class="recipe-grid"></div>
+    <div id="recipe-empty" class="empty-state" style="display:none">
+      <div class="icon">📖</div>
+      <p>該当するレシピがありません</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 調理タブ ===== -->
+<div id="tab-cooking" class="tab-content">
+  <div class="card">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <h3 id="cooking-title" style="margin:0;flex:1">並行調理タイムライン</h3>
+      <select id="cooking-source-select" style="width:auto;min-width:100px;margin:0;font-size:.82rem" onchange="switchCookingSource()">
+        <option value="weekly">📅 週間献立から</option>
+        <option value="direct">🍳 レシピを直接選択</option>
+      </select>
+    </div>
+
+    <!-- 直接選択モード -->
+    <div id="direct-recipe-picker" style="display:none;margin-bottom:16px">
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <input type="text" id="direct-recipe-search" placeholder="🔍 レシピ名で検索..." style="flex:1;min-width:140px;margin:0;font-size:.85rem" oninput="renderDirectRecipePicker()">
+        <button class="btn btn-sm" onclick="generateTimelineDirect()">⏱️ タイムライン生成</button>
+      </div>
+      <div id="direct-recipe-selected" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"></div>
+      <div id="direct-recipe-list" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px"></div>
+    </div>
+
+    <div id="efficiency-summary" class="efficiency-card" style="display:none"></div>
+    <div class="view-toggle-btns">
+      <button class="view-toggle-btn active" onclick="toggleTimelineView('gantt',this)">ガントチャート</button>
+      <button class="view-toggle-btn" onclick="toggleTimelineView('list',this)">ステップリスト</button>
+    </div>
+    <div id="timeline-container" class="timeline-container"></div>
+    <div id="timeline-empty" class="empty-state">
+      <div class="icon">⏱️</div>
+      <p>週間献立から日を選ぶか、上の「レシピを直接選択」で<br>好きなレシピの調理タイムラインを作成できます</p>
+    </div>
+  </div>
+  <div class="card" id="timer-card" style="display:none">
+    <button class="btn" id="timer-btn" onclick="startCookingTimer()" style="width:100%">▶️ 調理タイマーをスタート</button>
+    <button class="btn btn-outline" id="timer-stop-btn" onclick="stopCookingTimer()" style="width:100%;display:none;margin-top:8px">⏹️ タイマーを停止</button>
+    <div id="timer-display" style="display:none;text-align:center;padding:20px;font-size:2.2rem;font-weight:bold;color:var(--primary)"></div>
+    <div id="current-step" style="display:none;padding:12px;background:rgba(74,124,89,.1);border-radius:8px;margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- ===== 買物タブ ===== -->
+<div id="tab-shopping" class="tab-content">
+  <div class="card">
+    <h3>買い物リスト</h3>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input type="text" id="new-item-name" placeholder="材料名" style="flex:1;margin:0">
+      <input type="text" id="new-item-qty" placeholder="分量" style="flex:.6;margin:0">
+      <button class="btn btn-sm" onclick="addShoppingItem()">追加</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-sm btn-outline" onclick="clearCheckedShopping()">✓済み削除</button>
+      <button class="btn btn-sm btn-outline" onclick="clearAllShopping()">全削除</button>
+      <button class="btn btn-sm btn-outline" onclick="resetShoppingChecks()">チェック解除</button>
+      <button class="btn btn-sm" onclick="sendToNotion()">📝 Notionへ</button>
+    </div>
+    <div id="shopping-stats" style="font-size:.82rem;color:var(--text-light);margin-bottom:10px"></div>
+    <div id="shopping-list"></div>
+    <div id="shopping-empty" class="empty-state">
+      <div class="icon">🛒</div>
+      <p>買い物リストは空です<br>週間献立から材料を生成しましょう</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 栄養タブ ===== -->
+<div id="tab-nutrition" class="tab-content">
+  <div class="card">
+    <h3>栄養バランスチェック</h3>
+    <div style="margin-bottom:12px">
+      <select id="nutrition-scope" onchange="updateNutrition()" style="margin:0">
+        <option value="week">1週間全体</option>
+        <option value="0">月曜</option>
+        <option value="1">火曜</option>
+        <option value="2">水曜</option>
+        <option value="3">木曜</option>
+        <option value="4">金曜</option>
+        <option value="5">土曜</option>
+        <option value="6">日曜</option>
+      </select>
+    </div>
+    <div id="nutrition-alerts"></div>
+    <canvas id="nutrition-chart" width="300" height="300" style="display:block;margin:0 auto 16px;max-width:300px;width:100%"></canvas>
+    <div id="nutrition-summary" class="nutrition-summary"></div>
+  </div>
+</div>
+
+<!-- ===== レシピモーダル ===== -->
+<div id="recipe-modal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeRecipeModal()">✕</button>
+    <div class="modal-title" id="recipe-modal-title">レシピを作成</div>
+    <label>レシピ名</label>
+    <input type="text" id="rm-title" placeholder="例: 唐揚げ">
+    <label>カテゴリ</label>
+    <select id="rm-category">
+      <option value="主菜">主菜</option>
+      <option value="副菜">副菜</option>
+      <option value="汁物">汁物</option>
+      <option value="サラダ">サラダ</option>
+      <option value="主食">主食（ごはん・麺）</option>
+    </select>
+    <label>説明</label>
+    <textarea id="rm-desc" rows="2" placeholder="このレシピについて"></textarea>
+    <label>調理時間（分）</label>
+    <input type="number" id="rm-time" value="30">
+    <label>材料（1行1つ、例: 玉ねぎ/1個）</label>
+    <textarea id="rm-ingredients" rows="4" placeholder="玉ねぎ/1個&#10;卵/2個"></textarea>
+    <label>タグ（カンマ区切り）</label>
+    <input type="text" id="rm-tags" placeholder="簡単, 時短, 和食">
+    <label>調理手順（1行1ステップ）</label>
+    <textarea id="rm-steps" rows="4" placeholder="玉ねぎを切る&#10;フライパンで炒める"></textarea>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <button class="btn" onclick="saveRecipe()">保存</button>
+      <button class="btn btn-outline" onclick="closeRecipeModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== レシピ詳細モーダル ===== -->
+<div id="detail-modal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- ===== スロット追加モーダル ===== -->
+<div id="slot-modal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeSlotModal()">✕</button>
+    <div class="modal-title">レシピを追加</div>
+    <input type="text" id="slot-search" placeholder="レシピを検索..." oninput="filterSlotRecipes()">
+    <div class="source-tabs" id="slot-source-tabs">
+      <button class="source-tab active" data-src="all" onclick="setSlotSource('all',this)">すべて</button>
+      <button class="source-tab" data-src="basic" onclick="setSlotSource('basic',this)">基本</button>
+      <button class="source-tab" data-src="akari" onclick="setSlotSource('akari',this)">あかり</button>
+      <button class="source-tab" data-src="kagome" onclick="setSlotSource('kagome',this)">カゴメ</button>
+      <button class="source-tab" data-src="ajinomoto" onclick="setSlotSource('ajinomoto',this)">味の素</button>
+      <button class="source-tab" data-src="kikkoman" onclick="setSlotSource('kikkoman',this)">キッコーマン</button>
+      <button class="source-tab" data-src="shirogohan" onclick="setSlotSource('shirogohan',this)">白ごはん</button>
+      <button class="source-tab" data-src="hotcook" onclick="setSlotSource('hotcook',this)">ホットクック</button>
+      <button class="source-tab" data-src="my" onclick="setSlotSource('my',this)">マイ</button>
+    </div>
+    <div id="slot-recipe-list" style="max-height:300px;overflow-y:auto"></div>
+    <div id="slot-site-links" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ===== 設定モーダル ===== -->
+<div id="settings-modal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeSettings()">✕</button>
+    <div class="modal-title">⚙️ 設定</div>
+    <h4 style="margin:16px 0 8px;font-size:.9rem">Notion連携</h4>
+    <label>Integration Token</label>
+    <input type="password" id="notion-token" placeholder="your_notion_integration_token">
+    <label>Parent Page ID</label>
+    <input type="text" id="notion-page-id" placeholder="page_id">
+    <button class="btn" onclick="saveNotionSettings()" style="width:100%;margin-top:8px">保存</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================
+// State
+// ============================
+const DAYS = ['月','火','水','木','金','土','日'];
+const SLOTS = ['shushoku','shusai','fukusai','shirumono'];
+const SLOT_LABELS = {shushoku:'主食',shusai:'主菜',fukusai:'副菜',shirumono:'汁物'};
+const SLOT_ICONS = {shushoku:'🍚',shusai:'🥩',fukusai:'🥗',shirumono:'🍲'};
+
+let weekPlan = DAYS.map(() => ({shushoku:[],shusai:[],fukusai:[],shirumono:[],locked:false}));
+let myRecipes = [];
+let shoppingList = [];
+let selectedCookingDay = -1;
+let cookingTimeline = null;
+let currentTimelineView = 'gantt';
+let timerInterval = null;
+let timerSeconds = 0;
+let notionSettings = {token:'',parentPageId:''};
+let currentSourceFilter = 'all';
+let currentCategoryFilter = 'all';
+let pendingSlotInfo = null;
+let editingRecipeId = null;
+let ngRecipes = new Set(); // 自動生成NGレシピ
+let slotSourceFilter = 'all';
+
+// ============================
+// レシピDB — 基本
+// ============================
+const basicRecipeDB = [
+  {title:'コンソメスープ',category:'汁物',desc:'玉ねぎ、にんじん、じゃがいもを入れたシンプルで温かいスープ',ingredients:['玉ねぎ/1個','にんじん/1本','じゃがいも/1個','ベーコン/2枚','コンソメキューブ/2個','塩こしょう/少々'],tags:['スープ','シンプル','野菜'],cookTime:20,steps:[{text:'玉ねぎ、にんじん、じゃがいもを切る',duration:3,resource:'手作業'},{text:'ベーコンを切る',duration:1,resource:'手作業'},{text:'鍋に水を入れ野菜とベーコンを加える',duration:1,resource:'コンロ1'},{text:'コンソメキューブを加えて煮込む',duration:12,resource:'コンロ1'},{text:'塩こしょうで味を整える',duration:1,resource:'コンロ1'}],nutrition:{protein:1,vegetable:3,carb:1,other:0}},
+  {title:'中華たまごスープ',category:'汁物',desc:'ふわふわの卵が入った中華風スープ',ingredients:['卵/2個','長ねぎ/1本','鶏ガラスープの素/小さじ2','ごま油/小さじ1','塩こしょう/少々','水/400ml'],tags:['スープ','中華風','卵','時短'],cookTime:10,steps:[{text:'水に鶏ガラスープの素を加えて加熱',duration:3,resource:'コンロ1'},{text:'沸騰したら卵をそっと流し込む',duration:2,resource:'コンロ1'},{text:'長ねぎを加える',duration:1,resource:'コンロ1'},{text:'ごま油を回しかける',duration:1,resource:'コンロ1'}],nutrition:{protein:2,vegetable:1,carb:0,other:0}},
+  {title:'クリームシチュー',category:'汁物',desc:'とろっと濃厚なクリーム系シチュー',ingredients:['鶏もも肉/300g','じゃがいも/2個','にんじん/1本','玉ねぎ/1個','薄力粉/大さじ2','牛乳/200ml','バター/20g','コンソメ/1個'],tags:['シチュー','鶏肉','クリーム'],cookTime:40,steps:[{text:'野菜と鶏肉を切る',duration:5,resource:'手作業'},{text:'バターで鶏肉と野菜を炒める',duration:5,resource:'コンロ1'},{text:'薄力粉をふりかけて炒める',duration:2,resource:'コンロ1'},{text:'コンソメと水を加えて煮込む',duration:20,resource:'コンロ1'},{text:'牛乳を加えてさらに煮込む',duration:5,resource:'コンロ1'}],nutrition:{protein:3,vegetable:2,carb:1,other:1}},
+  {title:'わかめスープ',category:'汁物',desc:'さっぱりとした海のかおりが心地よいスープ',ingredients:['カットわかめ/大さじ1','長ねぎ/1本','鶏ガラスープの素/小さじ1.5','ごま油/小さじ1','白ごま/小さじ1','水/300ml'],tags:['スープ','わかめ','和風'],cookTime:8,steps:[{text:'水に鶏ガラスープの素を加えて加熱',duration:3,resource:'コンロ1'},{text:'沸騰したらわかめを加える',duration:2,resource:'コンロ1'},{text:'長ねぎを加え、ごま油と白ごまを散らす',duration:1,resource:'コンロ1'}],nutrition:{protein:0,vegetable:2,carb:0,other:1}},
+  {title:'かぼちゃのポタージュ',category:'汁物',desc:'なめらかでコクのあるかぼちゃスープ',ingredients:['かぼちゃ/200g','玉ねぎ/1個','牛乳/150ml','バター/15g','コンソメ/1個','塩/少々'],tags:['スープ','かぼちゃ','クリーム'],cookTime:25,steps:[{text:'かぼちゃと玉ねぎを切る',duration:3,resource:'手作業'},{text:'バターで玉ねぎを炒める',duration:3,resource:'コンロ1'},{text:'かぼちゃを加えて炒める',duration:2,resource:'コンロ1'},{text:'コンソメと水を加えて煮込む',duration:12,resource:'コンロ1'},{text:'ミキサーで滑らかにして牛乳を加える',duration:3,resource:'手作業'}],nutrition:{protein:0,vegetable:3,carb:1,other:1}},
+  {title:'豚汁',category:'汁物',desc:'ボリュームたっぷりで栄養満点の豚汁',ingredients:['豚バラ肉/100g','大根/200g','にんじん/1本','ごぼう/1本','こんにゃく/1枚','豆腐/150g','味噌/大さじ2','だし汁/600ml'],tags:['汁物','豚肉','ボリューム'],cookTime:30,steps:[{text:'豚肉と野菜を切る',duration:5,resource:'手作業'},{text:'こんにゃくを手でちぎる',duration:1,resource:'手作業'},{text:'だし汁で野菜を煮込む',duration:15,resource:'コンロ1'},{text:'豚肉を加えてさらに煮込む',duration:5,resource:'コンロ1'},{text:'味噌を溶かして豆腐を加える',duration:2,resource:'コンロ1'}],nutrition:{protein:2,vegetable:3,carb:0,other:1}},
+  {title:'ポテトサラダ',category:'副菜',desc:'マヨネーズが優しく香るポテトサラダ',ingredients:['じゃがいも/2個','にんじん/1本','きゅうり/1本','ハム/3枚','マヨネーズ/大さじ3','塩こしょう/少々'],tags:['サラダ','じゃがいも','定番'],cookTime:20,steps:[{text:'じゃがいもを加熱して潰す',duration:10,resource:'コンロ1'},{text:'にんじん、きゅうり、ハムを細かく切る',duration:5,resource:'手作業'},{text:'すべてをボウルで混ぜる',duration:2,resource:'手作業'},{text:'マヨネーズで和えて味を整える',duration:2,resource:'手作業'}],nutrition:{protein:1,vegetable:2,carb:2,other:0}},
+  {title:'きんぴらごぼう',category:'副菜',desc:'シャキシャキの食感が心地よい定番副菜',ingredients:['ごぼう/1本','にんじん/1本','しょうゆ/大さじ1','みりん/大さじ1','ごま油/小さじ2','唐辛子/1本'],tags:['副菜','ごぼう','シャキシャキ'],cookTime:15,steps:[{text:'ごぼうとにんじんを千切りにする',duration:5,resource:'手作業'},{text:'ごま油で炒める',duration:5,resource:'コンロ1'},{text:'しょうゆとみりんを加えて炒め合わせる',duration:3,resource:'コンロ1'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+  {title:'ほうれん草のごま和え',category:'副菜',desc:'シンプルながら深い味わいのほうれん草料理',ingredients:['ほうれん草/200g','すりごま/大さじ2','しょうゆ/小さじ1','砂糖/小さじ1'],tags:['野菜','ほうれん草','和食'],cookTime:10,steps:[{text:'ほうれん草を茹でて冷ます',duration:4,resource:'コンロ1'},{text:'水気を絞る',duration:1,resource:'手作業'},{text:'すりごま、しょうゆ、砂糖で和える',duration:2,resource:'手作業'}],nutrition:{protein:1,vegetable:3,carb:0,other:0}},
+  {title:'ひじきの煮物',category:'副菜',desc:'栄養満点で常備菜にも最適なひじき',ingredients:['乾燥ひじき/30g','にんじん/1本','油揚げ/1枚','しょうゆ/大さじ1.5','みりん/大さじ1','砂糖/小さじ1'],tags:['ひじき','常備菜','栄養'],cookTime:25,steps:[{text:'ひじきを戻す',duration:5,resource:'手作業'},{text:'にんじんと油揚げを細く切る',duration:3,resource:'手作業'},{text:'すべての材料を鍋に入れて煮込む',duration:15,resource:'コンロ1'}],nutrition:{protein:1,vegetable:2,carb:0,other:2}},
+  {title:'小松菜のおひたし',category:'副菜',desc:'さっぱりとした小松菜のおひたし',ingredients:['小松菜/200g','だし汁/大さじ3','しょうゆ/小さじ1','かつお節/1つかみ'],tags:['小松菜','おひたし','シンプル'],cookTime:8,steps:[{text:'小松菜を茹でる',duration:3,resource:'コンロ1'},{text:'冷ました後、水気を絞る',duration:2,resource:'手作業'},{text:'だし汁としょうゆで和え、かつお節をかける',duration:1,resource:'手作業'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+  {title:'切り干し大根の煮物',category:'副菜',desc:'ふんわり優しい味わいの切り干し大根',ingredients:['切り干し大根/30g','にんじん/1本','油揚げ/1枚','しょうゆ/大さじ1','みりん/大さじ1','砂糖/小さじ1'],tags:['大根','常備菜','栄養'],cookTime:20,steps:[{text:'切り干し大根を戻す',duration:5,resource:'手作業'},{text:'にんじんと油揚げを切る',duration:3,resource:'手作業'},{text:'だし汁で煮込み、調味料を加えて煮詰める',duration:10,resource:'コンロ1'}],nutrition:{protein:1,vegetable:2,carb:0,other:1}},
+  {title:'肉じゃが',category:'主菜',desc:'日本の家庭料理の代表選手',ingredients:['牛薄切り肉/200g','じゃがいも/2個','にんじん/1本','玉ねぎ/1個','しらたき/100g','しょうゆ/大さじ2','砂糖/大さじ1','みりん/大さじ1'],tags:['牛肉','じゃがいも','ボリューム'],cookTime:30,steps:[{text:'すべての材料を切る',duration:5,resource:'手作業'},{text:'鍋で牛肉を炒める',duration:3,resource:'コンロ1'},{text:'野菜を加えて炒める',duration:3,resource:'コンロ1'},{text:'しらたきと調味料を加えて煮込む',duration:17,resource:'コンロ1'}],nutrition:{protein:3,vegetable:2,carb:2,other:0}},
+  {title:'ハンバーグ',category:'主菜',desc:'ジューシーなハンバーグは大人気',ingredients:['合いびき肉/300g','玉ねぎ/1個','パン粉/大さじ3','卵/1個','牛乳/大さじ2','塩こしょう/少々','ナツメグ/少々'],tags:['ひき肉','ハンバーグ','ボリューム'],cookTime:25,steps:[{text:'玉ねぎをみじん切りにして加熱する',duration:5,resource:'コンロ1'},{text:'すべての材料を混ぜてこねる',duration:5,resource:'手作業'},{text:'タネを成形する',duration:3,resource:'手作業'},{text:'フライパンで両面を焼く',duration:10,resource:'コンロ1'}],nutrition:{protein:4,vegetable:1,carb:1,other:0}},
+  {title:'鮭の塩焼き',category:'主菜',desc:'シンプルながら上品な鮭料理',ingredients:['鮭切り身/2切れ','塩/小さじ1','大根/100g','レモン/1/4個'],tags:['鮭','魚','シンプル'],cookTime:15,steps:[{text:'鮭に塩をふって少し置く',duration:5,resource:'手作業'},{text:'グリルで焼く',duration:8,resource:'グリル'},{text:'大根をおろし、レモンを添える',duration:2,resource:'手作業'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+  {title:'豚の生姜焼き',category:'主菜',desc:'ご飯が進む甘辛い豚肉料理',ingredients:['豚ロース/300g','玉ねぎ/1個','しょうゆ/大さじ2','みりん/大さじ1','酒/大さじ1','しょうが/20g'],tags:['豚肉','生姜焼き','ご飯進む'],cookTime:15,steps:[{text:'豚肉と玉ねぎを切り、しょうがをおろす',duration:3,resource:'手作業'},{text:'フライパンで豚肉を焼く',duration:4,resource:'コンロ1'},{text:'玉ねぎを加える',duration:3,resource:'コンロ1'},{text:'調味料を加えて煮詰める',duration:3,resource:'コンロ1'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+  {title:'鶏の唐揚げ',category:'主菜',desc:'カリカリジューシーな唐揚げ',ingredients:['鶏もも肉/400g','しょうゆ/大さじ2','酒/大さじ1','しょうが/15g','にんにく/1片','片栗粉/大さじ3','薄力粉/大さじ2'],tags:['鶏肉','唐揚げ','ボリューム'],cookTime:30,steps:[{text:'鶏肉を一口大に切る',duration:3,resource:'手作業'},{text:'調味料に漬ける',duration:5,resource:'手作業'},{text:'片栗粉と薄力粉をまぶす',duration:2,resource:'手作業'},{text:'油で揚げる（1回目）',duration:8,resource:'コンロ1'},{text:'二度揚げする',duration:5,resource:'コンロ1'}],nutrition:{protein:4,vegetable:0,carb:1,other:0}},
+  {title:'回鍋肉',category:'主菜',desc:'ピリ辛がたまらない中華料理',ingredients:['豚バラ/200g','キャベツ/200g','ピーマン/2個','甜面醤/大さじ1','豆板醤/小さじ1','しょうゆ/小さじ1','酒/大さじ1'],tags:['豚肉','中華','ピリ辛'],cookTime:15,steps:[{text:'豚肉、キャベツ、ピーマンを切る',duration:3,resource:'手作業'},{text:'豚肉を炒めて一度取り出す',duration:3,resource:'コンロ1'},{text:'野菜を強火で炒める',duration:3,resource:'コンロ1'},{text:'豚肉を戻し調味料を加えて炒め合わせる',duration:3,resource:'コンロ1'}],nutrition:{protein:3,vegetable:2,carb:0,other:0}},
+  {title:'グリーンサラダ',category:'サラダ',desc:'シンプルな野菜サラダ',ingredients:['レタス/1/4個','きゅうり/1本','トマト/1個','ドレッシング/大さじ3'],tags:['サラダ','野菜','シンプル'],cookTime:5,steps:[{text:'レタスを手でちぎる',duration:1,resource:'手作業'},{text:'きゅうりとトマトを切る',duration:2,resource:'手作業'},{text:'ドレッシングをかける',duration:1,resource:'手作業'}],nutrition:{protein:0,vegetable:4,carb:0,other:0}},
+  {title:'コールスロー',category:'サラダ',desc:'キャベツの爽やかなサラダ',ingredients:['キャベツ/1/4個','にんじん/1本','コーン/大さじ3','マヨネーズ/大さじ2','酢/小さじ1','砂糖/小さじ1/2'],tags:['サラダ','キャベツ','定番'],cookTime:10,steps:[{text:'キャベツとにんじんを千切りにする',duration:5,resource:'手作業'},{text:'コーンを加える',duration:1,resource:'手作業'},{text:'マヨネーズ、酢、砂糖で和える',duration:2,resource:'手作業'}],nutrition:{protein:0,vegetable:3,carb:1,other:0}},
+
+  // ── 主菜（追加） ──
+  {title:'麻婆豆腐',category:'主菜',desc:'ピリ辛でご飯が進む中華の定番',ingredients:['木綿豆腐/1丁','豚ひき肉/150g','長ねぎ/1/2本','にんにく/1片','しょうが/1片','豆板醤/小さじ1','甜面醤/大さじ1','鶏ガラスープの素/小さじ1','しょうゆ/大さじ1','片栗粉/大さじ1','ごま油/大さじ1','水/150ml'],tags:['豆腐','中華','ピリ辛','ひき肉'],cookTime:15,steps:[{text:'豆腐を角切り、ねぎ・にんにく・しょうがをみじん切り',duration:3,resource:'手作業'},{text:'ごま油でひき肉と香味野菜を炒める',duration:3,resource:'コンロ1'},{text:'豆板醤・甜面醤を加えて炒め、水とスープの素を加える',duration:2,resource:'コンロ1'},{text:'豆腐を加えて5分煮込む',duration:5,resource:'コンロ1'},{text:'水溶き片栗粉でとろみをつける',duration:2,resource:'コンロ1'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+  {title:'チキン南蛮',category:'主菜',desc:'揚げ鶏にタルタルソースをたっぷり',ingredients:['鶏もも肉/300g','卵/2個','薄力粉/大さじ3','しょうゆ/大さじ2','酢/大さじ2','砂糖/大さじ2','玉ねぎ/1/4個','マヨネーズ/大さじ3','ゆで卵/1個'],tags:['鶏肉','揚げ物','タルタル','南蛮'],cookTime:25,steps:[{text:'鶏肉を一口大に切り、薄力粉と溶き卵をつける',duration:5,resource:'手作業'},{text:'タルタルソースを作る（ゆで卵+玉ねぎ+マヨ）',duration:3,resource:'手作業'},{text:'油で鶏肉を揚げる',duration:8,resource:'コンロ1'},{text:'南蛮酢（しょうゆ+酢+砂糖）を作り鶏肉を漬ける',duration:2,resource:'コンロ1'},{text:'タルタルソースをかける',duration:1,resource:'手作業'}],nutrition:{protein:4,vegetable:1,carb:1,other:0}},
+  {title:'豚キムチ',category:'主菜',desc:'キムチの旨味と豚肉のパンチ',ingredients:['豚バラ/200g','キムチ/150g','にら/1/2束','もやし/1/2袋','しょうゆ/小さじ1','ごま油/大さじ1'],tags:['豚肉','キムチ','韓国','時短'],cookTime:10,steps:[{text:'豚肉を切り、にらを3cm幅に切る',duration:2,resource:'手作業'},{text:'ごま油で豚肉を炒める',duration:3,resource:'コンロ1'},{text:'キムチともやしを加えて炒める',duration:3,resource:'コンロ1'},{text:'にらとしょうゆを加えてサッと炒める',duration:1,resource:'コンロ1'}],nutrition:{protein:3,vegetable:2,carb:0,other:0}},
+  {title:'鶏の照り焼き',category:'主菜',desc:'甘辛タレがとろーり絡む定番おかず',ingredients:['鶏もも肉/2枚','しょうゆ/大さじ2','みりん/大さじ2','酒/大さじ2','砂糖/大さじ1','サラダ油/大さじ1'],tags:['鶏肉','照り焼き','定番'],cookTime:15,steps:[{text:'鶏肉の厚い部分を開いて均一にする',duration:2,resource:'手作業'},{text:'フライパンで皮面から焼く',duration:5,resource:'コンロ1'},{text:'裏返して蓋をし3分蒸し焼き',duration:3,resource:'コンロ1'},{text:'調味料を加えて煮詰めながら絡める',duration:3,resource:'コンロ1'}],nutrition:{protein:4,vegetable:0,carb:0,other:0}},
+  {title:'エビチリ',category:'主菜',desc:'プリプリのえびをピリ辛チリソースで',ingredients:['えび/200g','長ねぎ/1/2本','にんにく/1片','しょうが/1片','ケチャップ/大さじ3','豆板醤/小さじ1','鶏ガラスープの素/小さじ1','片栗粉/大さじ1','酒/大さじ1','砂糖/小さじ1'],tags:['えび','中華','ピリ辛'],cookTime:15,steps:[{text:'えびの背わたを取り、酒と片栗粉で下味',duration:3,resource:'手作業'},{text:'ねぎ・にんにく・しょうがをみじん切り',duration:2,resource:'手作業'},{text:'香味野菜を炒め、えびを加えて炒める',duration:4,resource:'コンロ1'},{text:'チリソースを加えて絡める',duration:3,resource:'コンロ1'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+  {title:'野菜炒め',category:'主菜',desc:'あり合わせの野菜でサッと一品',ingredients:['豚こま肉/150g','キャベツ/150g','にんじん/1/2本','もやし/1袋','ピーマン/2個','しょうゆ/大さじ1','酒/大さじ1','塩こしょう/少々','サラダ油/大さじ1'],tags:['野菜','豚肉','時短','定番'],cookTime:10,steps:[{text:'野菜を食べやすい大きさに切る',duration:3,resource:'手作業'},{text:'強火で豚肉を炒める',duration:2,resource:'コンロ1'},{text:'野菜を加えて強火で炒める',duration:3,resource:'コンロ1'},{text:'調味料で味付け',duration:1,resource:'コンロ1'}],nutrition:{protein:3,vegetable:3,carb:0,other:0}},
+  {title:'鯖の塩焼き',category:'主菜',desc:'シンプルに焼くだけ。脂がのって美味。',ingredients:['鯖切り身/2切れ','塩/小さじ1','大根/100g','すだち/1個'],tags:['魚','さば','シンプル','グリル'],cookTime:15,steps:[{text:'鯖に塩をふって10分おく',duration:10,resource:'手作業'},{text:'水気を拭いてグリルで焼く',duration:8,resource:'グリル'},{text:'大根おろしとすだちを添える',duration:2,resource:'手作業'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+  {title:'カレイの煮付け',category:'主菜',desc:'ふっくら柔らかな煮魚の定番',ingredients:['カレイ/2切れ','しょうゆ/大さじ2','酒/大さじ3','みりん/大さじ2','砂糖/大さじ1','しょうが/1片','水/100ml'],tags:['魚','煮魚','和食'],cookTime:20,steps:[{text:'しょうがを薄切りにする',duration:1,resource:'手作業'},{text:'鍋に調味料と水を煮立てる',duration:2,resource:'コンロ1'},{text:'カレイを入れ落し蓋をして15分煮る',duration:15,resource:'コンロ1'}],nutrition:{protein:4,vegetable:0,carb:0,other:0}},
+  {title:'酢豚',category:'主菜',desc:'甘酸っぱいタレが食欲をそそる中華の王道',ingredients:['豚ロース/250g','玉ねぎ/1個','にんじん/1/2本','ピーマン/2個','片栗粉/大さじ3','酢/大さじ3','ケチャップ/大さじ3','しょうゆ/大さじ1','砂糖/大さじ2','サラダ油/適量'],tags:['豚肉','中華','甘酢','揚げ'],cookTime:25,steps:[{text:'豚肉を一口大に切り片栗粉をまぶす。野菜を乱切り',duration:5,resource:'手作業'},{text:'豚肉を揚げ焼きにする',duration:5,resource:'コンロ1'},{text:'野菜を炒める',duration:3,resource:'コンロ1'},{text:'甘酢ダレを作り全体を絡める',duration:3,resource:'コンロ1'}],nutrition:{protein:3,vegetable:2,carb:1,other:0}},
+  {title:'オムライス',category:'主菜',desc:'ふわとろ卵のオムライス',ingredients:['ごはん/2杯分','鶏もも肉/100g','玉ねぎ/1/2個','ケチャップ/大さじ4','卵/4個','牛乳/大さじ2','バター/20g','塩こしょう/少々'],tags:['卵','ケチャップ','洋食','定番'],cookTime:20,steps:[{text:'鶏肉と玉ねぎをみじん切り',duration:3,resource:'手作業'},{text:'フライパンで鶏肉と玉ねぎを炒め、ごはんとケチャップで炒める',duration:5,resource:'コンロ1'},{text:'卵液を作り（卵+牛乳+塩）、バターで半熟に焼く',duration:3,resource:'コンロ1'},{text:'チキンライスに卵をのせてケチャップをかける',duration:2,resource:'手作業'}],nutrition:{protein:3,vegetable:1,carb:3,other:0}},
+
+  // ── 副菜（追加） ──
+  {title:'かぼちゃの煮物',category:'副菜',desc:'ほくほく甘いかぼちゃの定番副菜',ingredients:['かぼちゃ/300g','しょうゆ/大さじ1','みりん/大さじ1','砂糖/大さじ1','だし汁/200ml'],tags:['かぼちゃ','煮物','定番'],cookTime:20,steps:[{text:'かぼちゃを一口大に切り、面取りする',duration:3,resource:'手作業'},{text:'だし汁と調味料でかぼちゃを煮る',duration:15,resource:'コンロ1'}],nutrition:{protein:0,vegetable:3,carb:1,other:0}},
+  {title:'ナムル3種盛り',category:'副菜',desc:'もやし・ほうれん草・にんじんのナムル',ingredients:['もやし/1袋','ほうれん草/100g','にんじん/1本','ごま油/大さじ2','鶏ガラスープの素/小さじ1','白ごま/大さじ1','にんにくチューブ/小さじ1/2','塩/少々'],tags:['ナムル','韓国','野菜','常備菜'],cookTime:12,steps:[{text:'もやしとほうれん草を茹でる。にんじんを千切りにしてレンジ加熱',duration:5,resource:'コンロ1'},{text:'水気を絞る',duration:2,resource:'手作業'},{text:'それぞれごま油・調味料で和える',duration:3,resource:'手作業'}],nutrition:{protein:0,vegetable:4,carb:0,other:0}},
+  {title:'たたきキュウリ',category:'副菜',desc:'ポリポリ食感がやみつきの即席副菜',ingredients:['きゅうり/2本','ごま油/大さじ1','しょうゆ/小さじ2','酢/小さじ1','砂糖/小さじ1/2','にんにくチューブ/少々','白ごま/大さじ1','塩/少々'],tags:['きゅうり','時短','おつまみ'],cookTime:5,steps:[{text:'きゅうりを麺棒で叩いて手でちぎる',duration:2,resource:'手作業'},{text:'調味料で和えて冷蔵庫で味をなじませる',duration:2,resource:'手作業'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+  {title:'白和え',category:'副菜',desc:'豆腐ベースの優しい和え物',ingredients:['木綿豆腐/1/2丁','ほうれん草/100g','にんじん/1/4本','しいたけ/2枚','白ごま/大さじ2','砂糖/大さじ1','しょうゆ/小さじ1','塩/少々'],tags:['豆腐','和食','野菜'],cookTime:15,steps:[{text:'豆腐を水切りする',duration:10,resource:'手作業'},{text:'ほうれん草を茹でて刻む。にんじん・しいたけを細切りにして茹でる',duration:4,resource:'コンロ1'},{text:'豆腐をつぶし、ごまと調味料で和え衣を作る',duration:2,resource:'手作業'},{text:'野菜を和え衣で和える',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:3,carb:0,other:0}},
+  {title:'マカロニサラダ',category:'副菜',desc:'みんな大好きな定番デリ風サラダ',ingredients:['マカロニ/80g','きゅうり/1本','ハム/3枚','にんじん/1/4本','コーン/大さじ2','マヨネーズ/大さじ3','塩こしょう/少々'],tags:['マカロニ','サラダ','定番'],cookTime:15,steps:[{text:'マカロニを茹でて冷ます',duration:10,resource:'コンロ1'},{text:'きゅうり・ハム・にんじんを細かく切る',duration:3,resource:'手作業'},{text:'マヨネーズで全体を和える',duration:2,resource:'手作業'}],nutrition:{protein:1,vegetable:2,carb:2,other:0}},
+  {title:'もやしのごま和え',category:'副菜',desc:'安い・早い・うまいの三拍子',ingredients:['もやし/1袋','すりごま/大さじ2','しょうゆ/小さじ2','砂糖/小さじ1','ごま油/小さじ1'],tags:['もやし','ごま','時短','節約'],cookTime:5,steps:[{text:'もやしを茹でて水気を切る',duration:3,resource:'コンロ1'},{text:'調味料で和える',duration:1,resource:'手作業'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+  {title:'なすの揚げ浸し',category:'副菜',desc:'じゅわっと味が染みた揚げなす',ingredients:['なす/3本','めんつゆ/100ml','水/100ml','しょうが/1片','大葉/3枚','サラダ油/適量'],tags:['なす','揚げ浸し','和食','夏'],cookTime:15,steps:[{text:'なすを縦半分に切り、皮に切り込みを入れる',duration:2,resource:'手作業'},{text:'つけ汁（めんつゆ+水+おろししょうが）を作る',duration:1,resource:'手作業'},{text:'油で揚げ焼きにする',duration:5,resource:'コンロ1'},{text:'熱いうちにつけ汁に漬ける',duration:1,resource:'手作業'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+  {title:'大根サラダ',category:'サラダ',desc:'シャキシャキ大根に和風ドレッシング',ingredients:['大根/200g','かいわれ大根/1パック','ツナ缶/1缶','しょうゆ/大さじ1','酢/大さじ1','ごま油/大さじ1','白ごま/大さじ1'],tags:['大根','サラダ','和風'],cookTime:8,steps:[{text:'大根を千切りにして水にさらす',duration:5,resource:'手作業'},{text:'水気を切り、かいわれとツナを加えドレッシングで和える',duration:3,resource:'手作業'}],nutrition:{protein:1,vegetable:3,carb:0,other:0}},
+  {title:'豆苗とツナのサラダ',category:'サラダ',desc:'コスパ最強のヘルシーサラダ',ingredients:['豆苗/1パック','ツナ缶/1缶','ごま油/大さじ1','しょうゆ/小さじ1','レモン汁/小さじ1','白ごま/少々'],tags:['豆苗','ツナ','時短','サラダ'],cookTime:5,steps:[{text:'豆苗を洗って半分に切る',duration:1,resource:'手作業'},{text:'ツナと調味料で和える',duration:2,resource:'手作業'}],nutrition:{protein:1,vegetable:3,carb:0,other:0}},
+
+  // ── 汁物（追加） ──
+  {title:'味噌汁（基本）',category:'汁物',desc:'毎日のお味噌汁。具はお好みで。',ingredients:['だし汁/400ml','味噌/大さじ2','豆腐/100g','わかめ/少々','長ねぎ/1/4本'],tags:['味噌汁','基本','定番'],cookTime:8,steps:[{text:'豆腐を角切り、ねぎを小口切り',duration:1,resource:'手作業'},{text:'だし汁を沸かし豆腐とわかめを入れる',duration:3,resource:'コンロ1'},{text:'味噌を溶き入れ、ねぎを散らす',duration:1,resource:'コンロ1'}],nutrition:{protein:1,vegetable:1,carb:0,other:0}},
+  {title:'なめこの味噌汁',category:'汁物',desc:'とろりとしたなめこが優しい味わい',ingredients:['だし汁/400ml','味噌/大さじ2','なめこ/1パック','豆腐/100g','長ねぎ/1/4本'],tags:['味噌汁','なめこ','きのこ'],cookTime:8,steps:[{text:'豆腐を角切り、ねぎを小口切り',duration:1,resource:'手作業'},{text:'だし汁を沸かし、なめこと豆腐を入れる',duration:3,resource:'コンロ1'},{text:'味噌を溶き入れ、ねぎを散らす',duration:1,resource:'コンロ1'}],nutrition:{protein:1,vegetable:1,carb:0,other:0}},
+  {title:'豆腐とわかめのすまし汁',category:'汁物',desc:'上品な味わいのおすまし',ingredients:['だし汁/400ml','しょうゆ/小さじ1','塩/少々','豆腐/100g','わかめ/少々','三つ葉/少々'],tags:['すまし汁','和食','上品'],cookTime:8,steps:[{text:'豆腐を角切り',duration:1,resource:'手作業'},{text:'だし汁を温め調味し、豆腐とわかめを入れる',duration:3,resource:'コンロ1'},{text:'三つ葉を添える',duration:1,resource:'手作業'}],nutrition:{protein:1,vegetable:1,carb:0,other:0}},
+  {title:'サンラータン（酸辣湯）',category:'汁物',desc:'酸味と辛味が食欲をそそる中華スープ',ingredients:['卵/1個','豆腐/100g','しいたけ/2枚','たけのこ/30g','鶏ガラスープの素/小さじ2','酢/大さじ2','しょうゆ/大さじ1','ラー油/小さじ1','片栗粉/大さじ1','水/400ml'],tags:['中華','酸辣湯','スープ'],cookTime:10,steps:[{text:'豆腐・しいたけ・たけのこを細切り',duration:2,resource:'手作業'},{text:'スープを作り具材を煮る',duration:4,resource:'コンロ1'},{text:'溶き卵を流し入れ、酢とラー油で仕上げる',duration:2,resource:'コンロ1'}],nutrition:{protein:2,vegetable:1,carb:0,other:0}},
+  {title:'キャベツとベーコンのスープ',category:'汁物',desc:'コトコト煮込むだけの簡単スープ',ingredients:['キャベツ/200g','ベーコン/3枚','コンソメキューブ/1個','にんにく/1片','塩こしょう/少々','水/500ml'],tags:['スープ','キャベツ','ベーコン','洋風'],cookTime:15,steps:[{text:'キャベツをざく切り、ベーコンを1cm幅に切る',duration:2,resource:'手作業'},{text:'鍋でベーコンとにんにくを炒め、水とコンソメを加える',duration:2,resource:'コンロ1'},{text:'キャベツを加えて10分煮込む',duration:10,resource:'コンロ1'}],nutrition:{protein:1,vegetable:2,carb:0,other:0}},
+];
+
+// ============================
+// レシピDB — 主食（ごはん・パン・麺）
+// ============================
+const shushokuRecipeDB = [
+  {title:'白ご飯',category:'主食',desc:'基本の白ご飯。炊飯器におまかせ。',ingredients:['米/2合','水/適量'],tags:['ご飯','基本','炊飯器'],cookTime:45,steps:[{text:'米を研いで浸水させる',duration:30,resource:'手作業'},{text:'炊飯器にセットして炊く',duration:40,resource:'炊飯器'}],nutrition:{protein:0,vegetable:0,carb:4,other:0}},
+  {title:'炊き込みご飯（鶏ごぼう）',category:'主食',desc:'鶏肉とごぼうの定番炊き込みご飯',ingredients:['米/2合','鶏もも肉/100g','ごぼう/1/2本','にんじん/1/4本','しょうゆ/大さじ2','酒/大さじ1','みりん/大さじ1','だし汁/適量'],tags:['炊き込み','鶏肉','ごぼう'],cookTime:55,steps:[{text:'米を研いで浸水させる',duration:30,resource:'手作業'},{text:'鶏肉を小さく切り、ごぼう・にんじんをささがきにする',duration:5,resource:'手作業'},{text:'炊飯器に米・調味料・具材を入れて炊飯',duration:45,resource:'炊飯器'}],nutrition:{protein:2,vegetable:1,carb:4,other:0}},
+  {title:'ガーリックライス',category:'主食',desc:'にんにくの香りが食欲をそそるご飯',ingredients:['ごはん/2杯分','にんにく/2片','バター/15g','しょうゆ/小さじ2','パセリ/少々','塩こしょう/少々'],tags:['ご飯','にんにく','洋風'],cookTime:10,steps:[{text:'にんにくをみじん切りにする',duration:1,resource:'手作業'},{text:'フライパンでバターとにんにくを炒める',duration:2,resource:'コンロ1'},{text:'ごはんを加えて炒め、しょうゆで味付け',duration:4,resource:'コンロ1'},{text:'パセリを散らす',duration:1,resource:'手作業'}],nutrition:{protein:1,vegetable:0,carb:4,other:0}},
+  {title:'おにぎり',category:'主食',desc:'シンプルな塩むすび。お好みの具で。',ingredients:['ごはん/2杯分','塩/少々','海苔/2枚','梅干し/2個'],tags:['おにぎり','シンプル','お弁当'],cookTime:5,steps:[{text:'手を濡らし塩をつけ、ごはんを握る',duration:3,resource:'手作業'},{text:'海苔を巻く',duration:2,resource:'手作業'}],nutrition:{protein:0,vegetable:0,carb:4,other:0}},
+  {title:'食パン（トースト）',category:'主食',desc:'シンプルなバタートースト',ingredients:['食パン/2枚','バター/適量'],tags:['パン','トースト','朝食'],cookTime:5,steps:[{text:'トースターで焼く',duration:3,resource:'オーブン'},{text:'バターを塗る',duration:1,resource:'手作業'}],nutrition:{protein:1,vegetable:0,carb:4,other:0}},
+  {title:'ざるうどん',category:'主食',desc:'冷たいうどんをつゆで。',ingredients:['うどん/2玉','めんつゆ/適量','ねぎ/少々','しょうが/少々','大葉/2枚'],tags:['うどん','冷たい','夏'],cookTime:12,steps:[{text:'たっぷりの湯を沸かす',duration:8,resource:'コンロ2'},{text:'うどんを茹でる',duration:3,resource:'コンロ2'},{text:'冷水でしめて水気を切る',duration:2,resource:'手作業'},{text:'薬味を切り、つゆと一緒に盛り付ける',duration:2,resource:'手作業'}],nutrition:{protein:1,vegetable:0,carb:4,other:0}},
+  {title:'焼きそば',category:'主食',desc:'野菜たっぷりのソース焼きそば',ingredients:['中華麺/2玉','豚バラ/100g','キャベツ/100g','にんじん/1/4本','もやし/1/2袋','焼きそばソース/大さじ3','サラダ油/大さじ1'],tags:['焼きそば','野菜','定番'],cookTime:15,steps:[{text:'野菜と豚肉を切る',duration:3,resource:'手作業'},{text:'フライパンで豚肉を炒める',duration:2,resource:'コンロ1'},{text:'野菜を加えて炒める',duration:3,resource:'コンロ1'},{text:'麺を加えてほぐしながら炒める',duration:3,resource:'コンロ1'},{text:'ソースを加えて絡める',duration:2,resource:'コンロ1'}],nutrition:{protein:2,vegetable:2,carb:3,other:0}},
+  {title:'パスタ（ペペロンチーノ）',category:'主食',desc:'オリーブオイルとにんにくのシンプルパスタ',ingredients:['パスタ/200g','にんにく/3片','唐辛子/1本','オリーブオイル/大さじ3','塩/適量','パセリ/少々'],tags:['パスタ','にんにく','イタリアン'],cookTime:15,steps:[{text:'たっぷりの湯を沸かす',duration:8,resource:'コンロ2'},{text:'にんにくをスライス、唐辛子を輪切り',duration:1,resource:'手作業'},{text:'パスタを茹でる',duration:8,resource:'コンロ2'},{text:'フライパンでオイル・にんにく・唐辛子を加熱',duration:3,resource:'コンロ1'},{text:'茹で上がったパスタと茹で汁を加えて和える',duration:2,resource:'コンロ1'}],nutrition:{protein:1,vegetable:0,carb:4,other:0}},
+  {title:'チャーハン',category:'主食',desc:'パラパラの基本チャーハン',ingredients:['ごはん/2杯分','卵/2個','長ねぎ/1/2本','ハム/2枚','しょうゆ/小さじ2','塩こしょう/少々','サラダ油/大さじ1'],tags:['チャーハン','中華','卵'],cookTime:10,steps:[{text:'ねぎとハムをみじん切り、卵を溶く',duration:2,resource:'手作業'},{text:'強火で卵を炒める',duration:1,resource:'コンロ1'},{text:'ごはんを加えてほぐしながら炒める',duration:3,resource:'コンロ1'},{text:'ねぎ・ハムを加え、しょうゆで味付け',duration:2,resource:'コンロ1'}],nutrition:{protein:2,vegetable:1,carb:4,other:0}},
+  {title:'そうめん',category:'主食',desc:'夏の定番、冷たいそうめん',ingredients:['そうめん/3束','めんつゆ/適量','ねぎ/少々','しょうが/少々','みょうが/1個'],tags:['そうめん','冷たい','夏','時短'],cookTime:8,steps:[{text:'たっぷりの湯を沸かす',duration:6,resource:'コンロ2'},{text:'そうめんを茹でる（2分）',duration:2,resource:'コンロ2'},{text:'冷水でしめて水気を切る',duration:2,resource:'手作業'},{text:'薬味を切り盛り付ける',duration:1,resource:'手作業'}],nutrition:{protein:0,vegetable:0,carb:4,other:0}},
+];
+
+// ============================
+// レシピDB — 長谷川あかり
+// ============================
+const akariRecipeDB = [
+  {title:'トマトバター目玉焼き',category:'主菜',desc:'こんがりソテーしたバター風味のトマトを崩し、半熟目玉焼きと一緒に。',ingredients:['完熟トマト/1個','有塩バター/10g','オリーブオイル/小さじ1','卵/2個','塩/適量','粗びき黒こしょう/適量'],tags:['トマト','卵','バター','時短'],cookTime:15,steps:[{text:'トマトのヘタを取り、横半分に切る',duration:1,resource:'手作業'},{text:'フライパンにバターとオリーブオイルを入れ強めの中火にかける',duration:1,resource:'コンロ1'},{text:'トマトの切り口を下にして焼きつける',duration:4,resource:'コンロ1'},{text:'トマトを端に寄せ、卵を割り入れ塩をふる',duration:1,resource:'コンロ1'},{text:'黄身が半熟になるまで焼き、盛り付ける',duration:4,resource:'コンロ1'}],nutrition:{protein:2,vegetable:2,carb:0,other:1}},
+  {title:'バター酒蒸しハンバーグ',category:'主菜',desc:'フライパンひとつ、ヘラで混ぜるだけ。20分で完成。',ingredients:['合い挽き肉/220g','塩/小さじ1/2','砂糖/小さじ1/2','片栗粉/小さじ2','ベーコン/1枚','にんにくチューブ/小さじ1/4','ナツメグ/6振り','牛乳/100ml','バター/20g','料理酒/50ml','ミニトマト/好きなだけ'],tags:['ハンバーグ','ひき肉','酒蒸し','時短'],cookTime:20,steps:[{text:'フライパンに全材料を入れ、ベラで練り混ぜ2等分にする',duration:3,resource:'手作業'},{text:'ラップで小判型に成形する',duration:2,resource:'手作業'},{text:'バターを入れたフライパンで中火3分焼く',duration:4,resource:'コンロ1'},{text:'ひっくり返して酒を入れ、蓋をし弱め中火で10分蒸す',duration:10,resource:'コンロ1'},{text:'煮汁をかけて仕上げる',duration:1,resource:'コンロ1'}],nutrition:{protein:4,vegetable:1,carb:0,other:1}},
+  {title:'鶏肉と玉ねぎの白煮',category:'主菜',desc:'ごろっと半分に切った玉ねぎと鶏もも肉を水からじっくり煮るだけ。',ingredients:['鶏もも肉/1枚(300g)','玉ねぎ/2個','水/400ml','塩/小さじ1/2','豆板醤/適量'],tags:['鶏肉','玉ねぎ','煮物','シンプル'],cookTime:40,steps:[{text:'玉ねぎは横半分に切り、鶏肉は大きめに切る',duration:3,resource:'手作業'},{text:'鍋に鶏肉・玉ねぎ・水・塩を入れ中火にかける',duration:2,resource:'コンロ1'},{text:'沸騰したらアクを取り弱火で30分煮込む',duration:30,resource:'コンロ1'},{text:'器に盛り豆板醤を添える',duration:1,resource:'手作業'}],nutrition:{protein:4,vegetable:2,carb:0,other:0}},
+  {title:'大きな梅あんかけつくね',category:'主菜',desc:'スプーンで練るので手も汚れない。',ingredients:['鶏むねひき肉/200g','卵/1個','玉ねぎ(みじん切り)/50g','料理酒/大さじ2','片栗粉/小さじ1','塩/小さじ2/3','梅干し/1個','削り節/4g','水/300ml','片栗粉(あん用)/大さじ1強','白いりごま/大さじ1.5','小ねぎ/適量'],tags:['つくね','梅','あんかけ','鶏肉'],cookTime:25,steps:[{text:'フライパンに材料を入れスプーンで練り混ぜる',duration:3,resource:'手作業'},{text:'平らにして中火で両面焼く',duration:5,resource:'コンロ1'},{text:'水・削り節・梅干しを加え蓋をして弱火10分',duration:10,resource:'コンロ1'},{text:'つくねを取り出し水溶き片栗粉で餡を作る',duration:3,resource:'コンロ1'},{text:'餡をかけごまと小ねぎを散らす',duration:1,resource:'手作業'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+  {title:'トマト餃子',category:'主菜',desc:'トマトが主役の夏餃子。大葉たっぷり。',ingredients:['トマト/2個','大葉/10枚','しらす/30g','豚ひき肉/100g','餃子の皮/20枚','塩/少々','ごま油/大さじ1'],tags:['餃子','トマト','大葉','しらす'],cookTime:30,steps:[{text:'トマトの種をくり出し、果肉を角切りにする',duration:3,resource:'手作業'},{text:'大葉を千切りにし、餡を混ぜる',duration:3,resource:'手作業'},{text:'餃子の皮で包む',duration:8,resource:'手作業'},{text:'フライパンにごま油を熱し焼き色をつける',duration:3,resource:'コンロ1'},{text:'水を加え蓋をし5分蒸し焼きにする',duration:6,resource:'コンロ1'},{text:'トマトの種で特製タレを作る',duration:1,resource:'手作業'}],nutrition:{protein:3,vegetable:2,carb:1,other:0}},
+  {title:'ピーマンの酒蒸し',category:'副菜',desc:'料理酒・水で蒸してごま油で炒めるだけ。',ingredients:['ピーマン/6個','料理酒/大さじ2','水/大さじ2','塩/小さじ1/4','ごま油/大さじ1'],tags:['ピーマン','酒蒸し','時短','シンプル'],cookTime:5,steps:[{text:'ピーマンのヘタと種を取り細切りにする',duration:2,resource:'手作業'},{text:'フライパンに酒・水を煮立たせピーマンを加え30秒蒸す',duration:1,resource:'コンロ2'},{text:'塩とごま油を加えサッと炒める',duration:1,resource:'コンロ2'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+  {title:'蒸し豚 とろける茄子のグリーンソース',category:'主菜',desc:'フライパンひとつ。茄子のB面に感動。',ingredients:['豚ロース肉(塊)/300g','なす/3本','大葉/10枚','塩/適量','酒/大さじ3','オリーブオイル/大さじ1','水/100ml'],tags:['豚肉','なす','蒸し','フライパン'],cookTime:35,steps:[{text:'豚肉に塩を擦り込み、なすを縦半分に切る',duration:3,resource:'手作業'},{text:'フライパンになすを敷き豚肉をのせ酒と水を注ぐ',duration:2,resource:'コンロ1'},{text:'蓋をして弱め中火で25分蒸す',duration:25,resource:'コンロ1'},{text:'豚肉をスライスし、なすを潰して大葉を混ぜソースにする',duration:4,resource:'手作業'}],nutrition:{protein:4,vegetable:2,carb:0,other:0}},
+  {title:'鶏野菜キーマカレー',category:'ごはん・麺',desc:'カレー粉だけで気楽に作れる。ルーがなくても本格的な味。',ingredients:['鶏ひき肉/200g','玉ねぎ/1個','にんじん/1/2本','ピーマン/2個','ホールトマト缶/1缶','カレー粉/大さじ2','料理酒/大さじ2','ヨーグルト/大さじ2','塩/小さじ1','ごはん/適量'],tags:['カレー','鶏肉','ルー不使用'],cookTime:30,steps:[{text:'野菜をみじん切りにする',duration:5,resource:'手作業'},{text:'鶏ひき肉と野菜を炒める',duration:5,resource:'コンロ1'},{text:'カレー粉を加え1分炒める',duration:1,resource:'コンロ1'},{text:'トマト缶・酒・ヨーグルトを加え15分煮込む',duration:15,resource:'コンロ1'},{text:'塩で味を整えごはんに添える',duration:1,resource:'手作業'}],nutrition:{protein:3,vegetable:3,carb:2,other:0}},
+  {title:'中華風トマト親子丼',category:'ごはん・麺',desc:'ノンオイルで食べ疲れしない。',ingredients:['鶏もも肉/1枚(250g)','卵/3個','トマト/2個','塩/小さじ1/2','ごはん/2杯分'],tags:['丼','トマト','鶏肉','ヘルシー'],cookTime:15,steps:[{text:'鶏肉を切り塩をもみ込む。トマトをくし形に、卵を溶く',duration:3,resource:'手作業'},{text:'フライパンで鶏肉を皮目から焼く',duration:4,resource:'コンロ1'},{text:'トマトを加え崩しながら炒める',duration:3,resource:'コンロ1'},{text:'溶き卵を回しかけ半熟で火を止める',duration:2,resource:'コンロ1'},{text:'ごはんにのせて完成',duration:1,resource:'手作業'}],nutrition:{protein:4,vegetable:2,carb:2,other:0}},
+  {title:'トマトパスタ',category:'ごはん・麺',desc:'玉ねぎとにんにくをじっくり炒め、トマト缶で煮込む。',ingredients:['玉ねぎ/1個','にんにく/2片','オリーブオイル/適量','じゃがいも/1個','ホールトマト缶/1缶','酒/約1/2カップ','塩/少々','パスタ/200g'],tags:['パスタ','トマト'],cookTime:30,steps:[{text:'玉ねぎをみじん切り、にんにくをつぶす',duration:4,resource:'手作業'},{text:'オリーブオイルで玉ねぎとにんにくをじっくり炒める',duration:5,resource:'コンロ1'},{text:'トマト缶・酒を加え煮込む',duration:12,resource:'コンロ1'},{text:'別鍋でパスタを茹でる',duration:8,resource:'コンロ2'},{text:'パスタをソースに加えて仕上げる',duration:2,resource:'コンロ1'}],nutrition:{protein:1,vegetable:2,carb:4,other:0}},
+  {title:'豚肉とニラの梅ナンプラー炊き込み',category:'ごはん・麺',desc:'ナンプラーの旨み、梅の酸。おかわり必至。',ingredients:['米/2合','豚バラ肉/150g','ニラ/1束','梅干し/2個','ナンプラー/大さじ1','料理酒/大さじ1'],tags:['炊き込みごはん','豚肉','ニラ','梅'],cookTime:50,steps:[{text:'米を研いで浸水。豚肉を切り、ニラを3cm幅に切る',duration:5,resource:'手作業'},{text:'炊飯器に米・調味料・豚肉・梅干しをのせ炊飯',duration:40,resource:'炊飯器'},{text:'炊き上がったらニラを加え5分蒸らし混ぜる',duration:5,resource:'手作業'}],nutrition:{protein:3,vegetable:1,carb:4,other:0}},
+  {title:'豚肉とほうれん草の常夜鍋',category:'汁物',desc:'パルメザンチーズ＋柑橘果汁が最高。',ingredients:['豚ロースしゃぶしゃぶ用/250g','ほうれん草/1束','昆布/5g','塩/小さじ1','白ワイン/50ml','オリーブオイル/大さじ1','水/600ml','パルメザンチーズ/たっぷり'],tags:['鍋','豚肉','ほうれん草','チーズ'],cookTime:20,steps:[{text:'ほうれん草を切り、水に放ってアク抜き',duration:12,resource:'手作業'},{text:'鍋でほうれん草を白ワインとオリーブオイルで蒸し煮',duration:4,resource:'コンロ1'},{text:'水・昆布・塩を加え豚肉を煮る',duration:5,resource:'コンロ1'},{text:'パルメザンチーズと柑橘を添える',duration:1,resource:'手作業'}],nutrition:{protein:4,vegetable:2,carb:0,other:1}},
+  {title:'鶏肉・わかめ・豆腐の塩スープ',category:'汁物',desc:'限界な日でも作れる気楽なスープ。',ingredients:['鶏もも肉/150g','カットわかめ/大さじ1','絹豆腐/1/2丁','水/500ml','塩/小さじ2/3','ごま油/小さじ1','白ごま/適量'],tags:['スープ','鶏肉','わかめ','豆腐','シンプル'],cookTime:15,steps:[{text:'鶏肉と豆腐を切る',duration:2,resource:'手作業'},{text:'鍋に水と鶏肉を入れ中火でアクを取る',duration:5,resource:'コンロ1'},{text:'わかめと豆腐を加え3分煮る',duration:3,resource:'コンロ1'},{text:'塩・ごま油・白ごまで仕上げる',duration:1,resource:'コンロ1'}],nutrition:{protein:3,vegetable:1,carb:0,other:1}},
+  {title:'豆鍋',category:'汁物',desc:'豆腐とひきわり納豆を混ぜ合わせ水を注いで煮るだけ。',ingredients:['絹ごし豆腐/1丁','ひきわり納豆/2パック','豚バラ肉(しゃぶしゃぶ用)/200g','大根/1/4本','豆苗/1パック','塩/小さじ1と1/3','水/625ml'],tags:['鍋','豆腐','納豆','豚肉'],cookTime:20,steps:[{text:'大根をスライサーで千切り、豆苗を切る',duration:3,resource:'手作業'},{text:'鍋で豆腐と納豆をお玉で混ぜ合わせる',duration:2,resource:'手作業'},{text:'水と塩を加え中火で煮立たせる',duration:3,resource:'コンロ1'},{text:'豚バラと大根を加え火を通し、豆苗を加える',duration:8,resource:'コンロ1'}],nutrition:{protein:4,vegetable:2,carb:0,other:1}},
+  {title:'豚肉と玉ねぎの梅炒め',category:'主菜',desc:'1肉1野菜のシンプル炒め。',ingredients:['豚こま肉/200g','玉ねぎ/1個','梅干し/2個','しょうゆ/小さじ1','みりん/小さじ1','ごま油/大さじ1'],tags:['豚肉','玉ねぎ','梅','炒め物','シンプル'],cookTime:12,steps:[{text:'玉ねぎを薄切り、梅干しをたたく',duration:2,resource:'手作業'},{text:'ごま油で豚肉を中火で炒める',duration:3,resource:'コンロ1'},{text:'玉ねぎを加え、梅・調味料で炒め合わせる',duration:4,resource:'コンロ1'}],nutrition:{protein:3,vegetable:1,carb:0,other:0}},
+  {title:'紅生姜と大根の和え物',category:'副菜',desc:'塩揉みした大根と紅生姜をごま油で和えるだけ。',ingredients:['大根/200g','紅生姜/30g','ごま油/小さじ1','塩/少々'],tags:['大根','紅生姜','和え物','時短'],cookTime:10,steps:[{text:'大根を千切りにし塩もみして水気を絞る',duration:7,resource:'手作業'},{text:'紅生姜と合わせごま油で和える',duration:2,resource:'手作業'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+  {title:'小松菜の塩だけおひたし',category:'副菜',desc:'塩で小松菜をさっと煮るだけ。',ingredients:['小松菜/1束','水/300ml','塩/小さじ1/2','かつお節/適量'],tags:['小松菜','おひたし','シンプル'],cookTime:8,steps:[{text:'小松菜を食べやすい長さに切る',duration:1,resource:'手作業'},{text:'鍋で塩水を沸かし小松菜をさっと煮る',duration:3,resource:'コンロ2'},{text:'汁ごと盛り付け、かつお節をかける',duration:1,resource:'手作業'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+  {title:'鶏むね肉の里芋ソース',category:'主菜',desc:'里芋の上に鶏胸肉をのせて蒸す。',ingredients:['鶏むね肉/1枚(250g)','里芋/小5〜6個','オリーブオイル/大さじ1','塩/適量','小ねぎ/適量','水/150ml'],tags:['鶏肉','里芋','蒸し','ヘルシー'],cookTime:35,steps:[{text:'鶏むね肉に塩とオリーブオイルを塗る。里芋を切る',duration:5,resource:'手作業'},{text:'フライパンで里芋・塩・水を煮る',duration:12,resource:'コンロ1'},{text:'鶏むね肉をのせ水を加え煮立たせる',duration:2,resource:'コンロ1'},{text:'蓋をして弱火で18分蒸す',duration:18,resource:'コンロ1'},{text:'鶏肉をスライスし里芋をソースにして盛る',duration:2,resource:'手作業'}],nutrition:{protein:4,vegetable:1,carb:1,other:0}},
+];
+
+// ============================
+// レシピDB — ホットクック
+// ============================
+const hotcookRecipeDB = [
+  {title:'ホットクック無水カレー',category:'ごはん・麺',desc:'水を使わず野菜の水分だけで作る濃厚カレー。ホットクックの定番メニュー。',ingredients:['鶏もも肉/300g','玉ねぎ/2個(400g)','トマト/3個(またはトマト缶1缶)','にんじん/1本','セロリ/1/2本','にんにく/1片','しょうが/1片','カレールー/4皿分'],tags:['カレー','鶏肉','無水','ホットクック'],cookTime:70,steps:[{text:'玉ねぎをくし切り、トマトをざく切り、にんじん・セロリを乱切りにする',duration:5,resource:'手作業'},{text:'鶏肉を一口大に切る',duration:2,resource:'手作業'},{text:'内鍋にトマト・玉ねぎ・にんじん・セロリ・鶏肉の順に入れる',duration:2,resource:'手作業'},{text:'ホットクック自動メニュー「チキンと野菜のカレー(無水)」で加熱',duration:55,resource:'ホットクック'},{text:'カレールーを割り入れて混ぜ、追加加熱5分',duration:6,resource:'ホットクック'}],nutrition:{protein:3,vegetable:3,carb:2,other:0}},
+  {title:'ホットクック肉じゃが',category:'主菜',desc:'ほくほくのじゃがいもに味がしみた定番肉じゃが。ホットクックなら煮崩れなし。',ingredients:['牛薄切り肉/200g','じゃがいも/3個','にんじん/1本','玉ねぎ/1個','しらたき/100g','しょうゆ/大さじ3','砂糖/大さじ2','みりん/大さじ2','酒/大さじ1'],tags:['牛肉','じゃがいも','煮物','ホットクック'],cookTime:45,steps:[{text:'じゃがいもを4つ割り、にんじんは乱切り、玉ねぎはくし切りにする',duration:4,resource:'手作業'},{text:'しらたきを下茹でして切る',duration:2,resource:'手作業'},{text:'内鍋に調味料を入れ、野菜・しらたき・牛肉の順に重ねる',duration:2,resource:'手作業'},{text:'ホットクック自動メニュー「肉じゃが」で加熱',duration:35,resource:'ホットクック'}],nutrition:{protein:3,vegetable:2,carb:2,other:0}},
+  {title:'ホットクック豚の角煮',category:'主菜',desc:'下茹でから本煮込みまでホットクックにおまかせ。トロトロの角煮が簡単に。',ingredients:['豚バラ塊肉/500g','長ねぎ(青い部分)/1本分','しょうが/1片','しょうゆ/大さじ3','砂糖/大さじ2','酒/100ml','みりん/大さじ2','水/200ml','ゆで卵/2〜4個'],tags:['豚肉','角煮','煮物','ホットクック'],cookTime:105,steps:[{text:'豚バラ肉を5cm幅に切る',duration:2,resource:'手作業'},{text:'内鍋に豚肉・ねぎの青い部分・しょうがスライス・水を入れ、手動スープモード(混ぜない)30分で下茹で',duration:30,resource:'ホットクック'},{text:'茹で汁を捨て内鍋を洗い、豚肉を戻す',duration:3,resource:'手作業'},{text:'調味料と水を加え、自動メニュー「豚の角煮」で加熱',duration:60,resource:'ホットクック'},{text:'ゆで卵を加えて保温で味を染み込ませる',duration:10,resource:'ホットクック'}],nutrition:{protein:4,vegetable:0,carb:0,other:1}},
+  {title:'ホットクック筑前煮',category:'主菜',desc:'根菜たっぷりの定番和食。味しみしみの筑前煮がボタンひとつで。',ingredients:['鶏もも肉/1枚(250g)','にんじん/1本','れんこん/100g','ごぼう/1/2本','こんにゃく/1枚','干ししいたけ/4枚','しょうゆ/大さじ2','砂糖/大さじ2','酒/大さじ2','みりん/大さじ1','ほんだし/小さじ1'],tags:['鶏肉','根菜','和食','煮物','ホットクック'],cookTime:50,steps:[{text:'鶏肉を一口大に切り、野菜を乱切りにする。こんにゃくは手でちぎってアク抜きする',duration:8,resource:'手作業'},{text:'内鍋に調味料を入れ、野菜・こんにゃく・鶏肉の順に入れる',duration:2,resource:'手作業'},{text:'まぜ技ユニットをセットし自動メニュー「筑前煮」で加熱',duration:35,resource:'ホットクック'},{text:'煮詰め機能で5分追加加熱して仕上げる',duration:5,resource:'ホットクック'}],nutrition:{protein:3,vegetable:3,carb:0,other:0}},
+  {title:'ホットクックポトフ',category:'汁物',desc:'大きめ野菜がゴロゴロ入ったあったかポトフ。ホットクックでじっくり煮込み。',ingredients:['ウインナー/6本','じゃがいも/2個','にんじん/1本','玉ねぎ/1個','キャベツ/1/4個','コンソメキューブ/2個','塩こしょう/少々','水/400ml','ローリエ/1枚'],tags:['スープ','ウインナー','野菜','ホットクック'],cookTime:35,steps:[{text:'じゃがいもは大きめの一口大、にんじんはスティック状、玉ねぎはくし切り、キャベツはくし切りにする',duration:5,resource:'手作業'},{text:'ウインナーに浅く切り込みを入れる',duration:1,resource:'手作業'},{text:'内鍋に野菜・ウインナー・水・コンソメ・ローリエを入れる',duration:2,resource:'手作業'},{text:'手動メニュー「煮物をつくる(まぜない)」20分で加熱',duration:20,resource:'ホットクック'},{text:'塩こしょうで味を整える',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:3,carb:1,other:0}},
+  {title:'ホットクック鶏手羽元のさっぱり煮',category:'主菜',desc:'お酢の効果でホロホロに柔らかい手羽元。骨離れ抜群で子どもにも人気。',ingredients:['鶏手羽元/500g(10本)','ゆで卵/4個','しょうゆ/50ml','酢/50ml','砂糖/大さじ3','みりん/大さじ2','にんにく/1片','しょうが/1片'],tags:['鶏肉','手羽元','さっぱり','ホットクック'],cookTime:45,steps:[{text:'にんにく・しょうがをスライスする。手羽元に隠し包丁を入れる',duration:3,resource:'手作業'},{text:'内鍋に調味料をすべて入れ、手羽元・にんにく・しょうがを加える',duration:2,resource:'手作業'},{text:'手動メニュー「煮物をつくる(まぜる)」30分で加熱',duration:30,resource:'ホットクック'},{text:'ゆで卵を加えて保温10分で味を染み込ませる',duration:10,resource:'ホットクック'}],nutrition:{protein:4,vegetable:0,carb:0,other:1}},
+  {title:'ホットクッククリームシチュー',category:'汁物',desc:'ルーを使って簡単に。ホットクックの予約調理にも対応した冬の定番。',ingredients:['鶏もも肉/1枚(250g)','じゃがいも/3個','にんじん/1本','玉ねぎ/1個','シチューのルー/4皿分','水/200ml','牛乳/200ml','バター/10g'],tags:['シチュー','鶏肉','クリーム','ホットクック'],cookTime:55,steps:[{text:'鶏肉を一口大に切り、じゃがいもは4つ割り、にんじんは乱切り、玉ねぎはくし切りにする',duration:5,resource:'手作業'},{text:'内鍋にバター・野菜・鶏肉・水を入れる',duration:2,resource:'手作業'},{text:'まぜ技ユニットをセットし自動メニュー「クリームシチュー」で加熱',duration:40,resource:'ホットクック'},{text:'報知音が鳴ったらルーと牛乳を加えて残り5分加熱',duration:5,resource:'ホットクック'}],nutrition:{protein:3,vegetable:2,carb:1,other:1}},
+  {title:'ホットクックかぼちゃの煮物',category:'副菜',desc:'ホクホクで煮崩れしないかぼちゃの煮物。無水調理で素材の味を活かす。',ingredients:['かぼちゃ/1/4個(300g)','砂糖/大さじ1.5','酒/大さじ3','みりん/大さじ3','しょうゆ/小さじ1','塩/少々','水/50ml'],tags:['かぼちゃ','煮物','副菜','ホットクック'],cookTime:25,steps:[{text:'かぼちゃを一口大に切り、皮の面を下にして内鍋に並べる',duration:3,resource:'手作業'},{text:'調味料と水を混ぜてかぼちゃに回しかける',duration:1,resource:'手作業'},{text:'自動メニュー「かぼちゃの煮物」で加熱(まぜない)',duration:20,resource:'ホットクック'}],nutrition:{protein:0,vegetable:3,carb:1,other:0}},
+  {title:'ホットクック無水トマトスープ',category:'汁物',desc:'水を一切使わず野菜の水分だけで作る濃厚トマトスープ。冷蔵庫の残り野菜でOK。',ingredients:['トマト/3個','玉ねぎ/1個','にんじん/1/2本','キャベツ/2枚','ウインナー/4本','にんにく/1片','オリーブオイル/大さじ1','塩/全体重量の0.6%','こしょう/少々','ローリエ/1枚'],tags:['スープ','トマト','無水','ホットクック'],cookTime:30,steps:[{text:'トマトはざく切り、玉ねぎ・にんじん・キャベツは食べやすい大きさに切る',duration:4,resource:'手作業'},{text:'内鍋にトマト・玉ねぎ・にんじん・キャベツ・ウインナーの順に入れ、オリーブオイル・塩・ローリエを加える',duration:2,resource:'手作業'},{text:'まぜ技ユニットをセットし自動メニュー「具だくさんみそ汁(無水)」で加熱',duration:20,resource:'ホットクック'},{text:'こしょうで味を整える',duration:1,resource:'手作業'}],nutrition:{protein:1,vegetable:4,carb:0,other:0}},
+  {title:'ホットクックひじきの煮物',category:'副菜',desc:'常備菜の定番。ホットクックなら調味料と材料を入れてほったらかし。',ingredients:['乾燥ひじき/30g','にんじん/1/2本','油揚げ/1枚','大豆水煮/50g','しょうゆ/大さじ1.5','砂糖/大さじ1','みりん/大さじ1','酒/大さじ1','ほんだし/小さじ1','水/100ml'],tags:['ひじき','常備菜','和食','ホットクック'],cookTime:30,steps:[{text:'ひじきを水で戻す(約10分)。にんじん・油揚げを細切りにする',duration:12,resource:'手作業'},{text:'内鍋にすべての材料と調味料を入れて軽く混ぜる',duration:2,resource:'手作業'},{text:'まぜ技ユニットをセットし自動メニュー「ひじきの煮物」で加熱',duration:15,resource:'ホットクック'}],nutrition:{protein:1,vegetable:2,carb:0,other:2}},
+  {title:'ホットクック白菜と豚バラの重ね煮',category:'主菜',desc:'白菜と豚肉を交互に重ねて無水調理。素材の旨みが凝縮された一品。',ingredients:['白菜/500g(1/4玉)','豚バラ薄切り肉/300g','塩/小さじ1','こしょう/少々','コンソメ(顆粒)/小さじ1','ポン酢/お好みで'],tags:['豚肉','白菜','無水','ホットクック'],cookTime:40,steps:[{text:'白菜と豚バラ肉を交互に重ね、5cm幅に切る',duration:5,resource:'手作業'},{text:'塩こしょうをしながら内鍋に断面が上になるよう詰めていく',duration:3,resource:'手作業'},{text:'コンソメを振りかける',duration:1,resource:'手作業'},{text:'自動メニュー「白菜と豚バラの重ね煮」で加熱(まぜない)',duration:30,resource:'ホットクック'},{text:'お好みでポン酢を添えて盛り付ける',duration:1,resource:'手作業'}],nutrition:{protein:3,vegetable:3,carb:0,other:0}},
+  {title:'ホットクックぶり大根',category:'主菜',desc:'ぶりと大根に味がしっかり染みた和食の定番。ホットクックなら失敗知らず。',ingredients:['ぶり切り身/2〜3切れ','大根/1/3本(300g)','しょうが/1片','しょうゆ/大さじ4','みりん/大さじ4','砂糖/大さじ2','酒/大さじ2','水/300ml'],tags:['ぶり','大根','魚','和食','ホットクック'],cookTime:55,steps:[{text:'ぶりに熱湯を回しかけて臭みを取り、水気を拭く',duration:3,resource:'手作業'},{text:'大根を2cm厚さの半月切りにし、しょうがを千切りにする',duration:3,resource:'手作業'},{text:'内鍋に大根を並べ、ぶりをのせ、調味料・水・しょうがを加える',duration:2,resource:'手作業'},{text:'自動メニュー「ぶり大根」で加熱(まぜない)',duration:45,resource:'ホットクック'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+  {title:'ホットクックさばの味噌煮',category:'主菜',desc:'下処理不要で臭みなし。ホットクックで20分の簡単魚料理。',ingredients:['さば切り身/2切れ','しょうが/1片','味噌/大さじ2','砂糖/大さじ2','酒/50ml','みりん/大さじ1','しょうゆ/大さじ1','水/50ml'],tags:['さば','魚','味噌','和食','ホットクック'],cookTime:25,steps:[{text:'さばの皮に十字の切り込みを入れ、しょうがをスライスする',duration:2,resource:'手作業'},{text:'内鍋に調味料と水を入れて混ぜ、さばを皮を上にして並べ、しょうがをのせる',duration:2,resource:'手作業'},{text:'自動メニュー「さばのみそ煮」で加熱(まぜない)',duration:20,resource:'ホットクック'}],nutrition:{protein:4,vegetable:0,carb:0,other:1}},
+];
+
+// ============================
+// レシピDB — 外部サイト（CORS制限のためサンプルデータ + サイトリンク）
+// ============================
+const siteRecipeDB = {
+  kagome: {
+    name:'カゴメ', color:'var(--kagome)',
+    baseUrl:'https://www.kagome.co.jp/products/recipe/',
+    searchUrl: kw => kw ? `https://www.kagome.co.jp/products/recipe/?keyword=${encodeURIComponent(kw)}` : 'https://www.kagome.co.jp/products/recipe/',
+    recipes: [
+      {title:'トマトと鶏肉のさっぱり煮',category:'主菜',ingredients:['鶏もも肉/2枚','トマト缶/1缶','玉ねぎ/1個','にんにく/1片','オリーブオイル/大さじ1','塩こしょう/少々'],tags:['鶏肉','トマト'],cookTime:25,steps:[{text:'鶏肉と玉ねぎを切る',duration:3,resource:'手作業'},{text:'にんにくとオリーブオイルで鶏肉を焼く',duration:5,resource:'コンロ1'},{text:'玉ねぎとトマト缶を加えて煮込む',duration:15,resource:'コンロ1'}],nutrition:{protein:4,vegetable:2,carb:0,other:0}},
+      {title:'ラタトゥイユ',category:'副菜',ingredients:['なす/2本','ズッキーニ/1本','パプリカ/1個','トマト缶/1缶','玉ねぎ/1個','オリーブオイル/大さじ2'],tags:['なす','野菜','トマト'],cookTime:30,steps:[{text:'野菜をすべて角切りにする',duration:5,resource:'手作業'},{text:'オリーブオイルで野菜を炒める',duration:5,resource:'コンロ1'},{text:'トマト缶を加えて弱火で15分煮込む',duration:15,resource:'コンロ1'}],nutrition:{protein:0,vegetable:4,carb:0,other:0}},
+      {title:'ミネストローネ',category:'汁物',ingredients:['じゃがいも/1個','にんじん/1/2本','玉ねぎ/1/2個','キャベツ/2枚','トマトジュース/200ml','ベーコン/2枚'],tags:['トマト','スープ','時短'],cookTime:20,steps:[{text:'野菜とベーコンを小さく切る',duration:4,resource:'手作業'},{text:'鍋で炒める',duration:3,resource:'コンロ1'},{text:'トマトジュースと水を加えて煮込む',duration:12,resource:'コンロ1'}],nutrition:{protein:1,vegetable:3,carb:1,other:0}},
+      {title:'野菜たっぷりキーマカレー',category:'ごはん・麺',ingredients:['合いびき肉/200g','玉ねぎ/1個','にんじん/1/2本','ピーマン/2個','トマト缶/1缶','カレー粉/大さじ2'],tags:['カレー','ひき肉','トマト'],cookTime:25,steps:[{text:'野菜をみじん切りにする',duration:5,resource:'手作業'},{text:'ひき肉と野菜を炒める',duration:5,resource:'コンロ1'},{text:'トマト缶とカレー粉を加えて煮込む',duration:12,resource:'コンロ1'}],nutrition:{protein:3,vegetable:3,carb:2,other:0}},
+      {title:'トマトチーズリゾット',category:'ごはん・麺',ingredients:['ごはん/1杯','トマトジュース/200ml','玉ねぎ/1/4個','ベーコン/1枚','チーズ/30g','コンソメ/小さじ1'],tags:['トマト','チーズ','時短'],cookTime:15,steps:[{text:'玉ねぎとベーコンを切る',duration:2,resource:'手作業'},{text:'フライパンで炒めトマトジュースとごはんを加える',duration:5,resource:'コンロ1'},{text:'チーズを加えて溶かす',duration:3,resource:'コンロ1'}],nutrition:{protein:2,vegetable:1,carb:3,other:1}},
+      {title:'なすとトマトのグラタン',category:'主菜',ingredients:['なす/2本','トマト/2個','チーズ/50g','ベーコン/2枚','オリーブオイル/大さじ1'],tags:['なす','チーズ','トマト'],cookTime:25,steps:[{text:'なすとトマトをスライスする',duration:3,resource:'手作業'},{text:'耐熱皿に並べチーズとベーコンをのせる',duration:3,resource:'手作業'},{text:'オーブンで焼く',duration:15,resource:'オーブン'}],nutrition:{protein:2,vegetable:3,carb:0,other:1}},
+    ]
+  },
+  ajinomoto: {
+    name:'味の素パーク', color:'var(--ajinomoto)',
+    baseUrl:'https://park.ajinomoto.co.jp/recipe/',
+    searchUrl: kw => kw ? `https://park.ajinomoto.co.jp/recipe/search/?search_word=${encodeURIComponent(kw)}` : 'https://park.ajinomoto.co.jp/recipe/',
+    recipes: [
+      {title:'味噌マヨチキン',category:'主菜',ingredients:['鶏むね肉/1枚','味噌/大さじ1','マヨネーズ/大さじ2','砂糖/小さじ1','キャベツ/3枚'],tags:['鶏肉','時短','味噌'],cookTime:15,steps:[{text:'鶏肉を切り味噌マヨに漬ける',duration:3,resource:'手作業'},{text:'フライパンで焼く',duration:8,resource:'コンロ1'},{text:'キャベツを添える',duration:1,resource:'手作業'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+      {title:'ほうれん草のごま和え（味の素）',category:'副菜',ingredients:['ほうれん草/1束','すりごま/大さじ2','しょうゆ/小さじ2','砂糖/小さじ1','ほんだし/少々'],tags:['ほうれん草','和食'],cookTime:10,steps:[{text:'ほうれん草を茹でて冷水にとる',duration:4,resource:'コンロ2'},{text:'水気を絞って切る',duration:2,resource:'手作業'},{text:'調味料で和える',duration:1,resource:'手作業'}],nutrition:{protein:1,vegetable:3,carb:0,other:0}},
+      {title:'かきたま汁',category:'汁物',ingredients:['卵/2個','だし汁/600ml','しょうゆ/小さじ2','塩/少々','片栗粉/小さじ1','三つ葉/適量'],tags:['卵','汁物','和食'],cookTime:10,steps:[{text:'だし汁を温める',duration:3,resource:'コンロ1'},{text:'水溶き片栗粉を加えとろみをつける',duration:2,resource:'コンロ1'},{text:'卵を流し入れ三つ葉を散らす',duration:2,resource:'コンロ1'}],nutrition:{protein:2,vegetable:0,carb:0,other:0}},
+      {title:'豚バラ大根',category:'主菜',ingredients:['豚バラ肉/200g','大根/1/3本','しょうゆ/大さじ2','みりん/大さじ2','砂糖/大さじ1','ほんだし/小さじ1'],tags:['豚肉','大根','煮物'],cookTime:25,steps:[{text:'大根を半月切り、豚肉を切る',duration:3,resource:'手作業'},{text:'豚肉を炒める',duration:3,resource:'コンロ1'},{text:'大根と調味料を加えて煮込む',duration:17,resource:'コンロ1'}],nutrition:{protein:3,vegetable:2,carb:0,other:0}},
+      {title:'無限ピーマン',category:'副菜',ingredients:['ピーマン/5個','ツナ缶/1缶','ごま油/小さじ1','鶏ガラスープの素/小さじ1'],tags:['ピーマン','時短','ツナ'],cookTime:5,steps:[{text:'ピーマンを細切りにする',duration:2,resource:'手作業'},{text:'ツナと調味料を混ぜレンジで加熱',duration:3,resource:'電子レンジ'}],nutrition:{protein:2,vegetable:2,carb:0,other:0}},
+      {title:'あさりのお味噌汁',category:'汁物',ingredients:['あさり/200g','水/600ml','味噌/大さじ2','長ねぎ/適量'],tags:['あさり','味噌汁','和食'],cookTime:15,steps:[{text:'あさりの砂抜きをする',duration:3,resource:'手作業'},{text:'水であさりを煮て口が開くまで待つ',duration:7,resource:'コンロ1'},{text:'味噌を溶かしねぎを散らす',duration:2,resource:'コンロ1'}],nutrition:{protein:2,vegetable:1,carb:0,other:1}},
+    ]
+  },
+  kikkoman: {
+    name:'キッコーマン', color:'var(--kikkoman)',
+    baseUrl:'https://www.kikkoman.co.jp/homecook/',
+    searchUrl: kw => kw ? `https://www.kikkoman.co.jp/homecook/search/?keyword=${encodeURIComponent(kw)}` : 'https://www.kikkoman.co.jp/homecook/',
+    recipes: [
+      {title:'筑前煮',category:'主菜',ingredients:['鶏もも肉/1枚','にんじん/1本','れんこん/100g','ごぼう/1/2本','こんにゃく/1枚','しょうゆ/大さじ3','みりん/大さじ2'],tags:['鶏肉','和食','煮物'],cookTime:35,steps:[{text:'材料をすべて切る',duration:8,resource:'手作業'},{text:'鶏肉を炒める',duration:3,resource:'コンロ1'},{text:'野菜を加えて炒める',duration:3,resource:'コンロ1'},{text:'調味料と水を加えて煮込む',duration:18,resource:'コンロ1'}],nutrition:{protein:3,vegetable:3,carb:0,other:0}},
+      {title:'きんぴらごぼう（キッコーマン）',category:'副菜',ingredients:['ごぼう/1本','にんじん/1/2本','しょうゆ/大さじ2','みりん/大さじ1','ごま油/大さじ1','唐辛子/1本'],tags:['ごぼう','和食','定番'],cookTime:15,steps:[{text:'ごぼうとにんじんを千切りにする',duration:5,resource:'手作業'},{text:'ごま油で炒める',duration:5,resource:'コンロ1'},{text:'調味料を加えて炒め合わせる',duration:3,resource:'コンロ1'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+      {title:'肉豆腐',category:'主菜',ingredients:['牛薄切り肉/200g','豆腐/1丁','長ねぎ/1本','しょうゆ/大さじ3','みりん/大さじ2','砂糖/大さじ1'],tags:['牛肉','豆腐','和食'],cookTime:20,steps:[{text:'材料を切る',duration:3,resource:'手作業'},{text:'牛肉と長ねぎを炒める',duration:3,resource:'コンロ1'},{text:'調味料と豆腐を加えて煮込む',duration:12,resource:'コンロ1'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+      {title:'炊き込みごはん',category:'ごはん・麺',ingredients:['米/2合','鶏もも肉/100g','にんじん/1/3本','しめじ/1/2パック','油揚げ/1枚','しょうゆ/大さじ2','みりん/大さじ1'],tags:['ごはん','和食','鶏肉'],cookTime:50,steps:[{text:'材料を切る',duration:5,resource:'手作業'},{text:'炊飯器に米と調味料を入れ材料をのせて炊飯',duration:40,resource:'炊飯器'},{text:'混ぜて盛り付ける',duration:2,resource:'手作業'}],nutrition:{protein:2,vegetable:1,carb:4,other:0}},
+      {title:'さばの味噌煮',category:'主菜',ingredients:['さば/2切れ','味噌/大さじ3','砂糖/大さじ2','みりん/大さじ2','しょうが/1片','水/200ml'],tags:['さば','魚','和食'],cookTime:25,steps:[{text:'さばに切り目を入れ、しょうがをスライスする',duration:3,resource:'手作業'},{text:'鍋に水と調味料を煮立たせる',duration:3,resource:'コンロ1'},{text:'さばを入れて落し蓋をし15分煮る',duration:15,resource:'コンロ1'},{text:'煮汁をかけながら仕上げる',duration:2,resource:'コンロ1'}],nutrition:{protein:4,vegetable:0,carb:0,other:1}},
+      {title:'けんちん汁',category:'汁物',ingredients:['大根/5cm','にんじん/1/3本','ごぼう/1/3本','豆腐/1/2丁','こんにゃく/1/2枚','ごま油/大さじ1','しょうゆ/大さじ1','だし汁/800ml'],tags:['和食','汁物','野菜'],cookTime:25,steps:[{text:'野菜を切り豆腐をちぎる',duration:5,resource:'手作業'},{text:'ごま油で野菜を炒める',duration:5,resource:'コンロ1'},{text:'だし汁を加えて煮込み調味する',duration:12,resource:'コンロ1'}],nutrition:{protein:1,vegetable:3,carb:0,other:0}},
+    ]
+  },
+  shirogohan: {
+    name:'白ごはん.com', color:'var(--shirogohan)',
+    baseUrl:'https://www.sirogohan.com/recipe/',
+    searchUrl: kw => kw ? `https://www.sirogohan.com/?s=${encodeURIComponent(kw)}` : 'https://www.sirogohan.com/recipe/',
+    recipes: [
+      {title:'肉じゃが（白ごはん.com）',category:'主菜',ingredients:['牛薄切り肉/200g','じゃがいも/3個','にんじん/1本','玉ねぎ/1個','しらたき/1袋','しょうゆ/大さじ3','砂糖/大さじ2','みりん/大さじ2'],tags:['牛肉','じゃがいも','和食'],cookTime:30,steps:[{text:'材料をすべて切る',duration:5,resource:'手作業'},{text:'鍋で牛肉を炒め取り出す',duration:3,resource:'コンロ1'},{text:'野菜を炒め調味料で煮込む',duration:20,resource:'コンロ1'}],nutrition:{protein:3,vegetable:2,carb:2,other:0}},
+      {title:'ひじきの煮物（白ごはん.com）',category:'副菜',ingredients:['乾燥ひじき/20g','にんじん/1/3本','油揚げ/1枚','しょうゆ/大さじ2','みりん/大さじ1','砂糖/大さじ1'],tags:['ひじき','和食','常備菜'],cookTime:25,steps:[{text:'ひじきを戻す',duration:5,resource:'手作業'},{text:'材料を切る',duration:3,resource:'手作業'},{text:'だし汁と調味料で煮込む',duration:15,resource:'コンロ1'}],nutrition:{protein:1,vegetable:2,carb:0,other:1}},
+      {title:'小松菜のおひたし（白ごはん.com）',category:'副菜',ingredients:['小松菜/1束','だし汁/100ml','しょうゆ/小さじ2','かつお節/適量'],tags:['小松菜','和食','時短'],cookTime:8,steps:[{text:'小松菜を茹でて冷水にとる',duration:3,resource:'コンロ2'},{text:'水気を絞り切る',duration:2,resource:'手作業'},{text:'だし汁としょうゆで和える',duration:1,resource:'手作業'}],nutrition:{protein:0,vegetable:3,carb:0,other:0}},
+      {title:'たけのこごはん',category:'ごはん・麺',ingredients:['米/2合','たけのこ水煮/150g','油揚げ/1枚','だし汁/適量','しょうゆ/大さじ1.5','みりん/大さじ1'],tags:['たけのこ','和食','ごはん'],cookTime:50,steps:[{text:'材料を切る',duration:5,resource:'手作業'},{text:'炊飯器に米とだし汁・調味料・具材を入れ炊飯',duration:40,resource:'炊飯器'},{text:'混ぜて盛り付ける',duration:2,resource:'手作業'}],nutrition:{protein:1,vegetable:1,carb:4,other:0}},
+      {title:'茶碗蒸し',category:'副菜',ingredients:['卵/2個','だし汁/300ml','しょうゆ/小さじ1','塩/少々','えび/4尾','しいたけ/2枚','三つ葉/適量'],tags:['卵','和食','蒸し物'],cookTime:25,steps:[{text:'卵液を作り具材を切る',duration:5,resource:'手作業'},{text:'器に具材と卵液を入れる',duration:2,resource:'手作業'},{text:'蒸し器で12分蒸す',duration:15,resource:'コンロ1'}],nutrition:{protein:3,vegetable:1,carb:0,other:0}},
+      {title:'豚の角煮',category:'主菜',ingredients:['豚バラ塊肉/500g','長ねぎ(青い部分)/1本','しょうが/1片','しょうゆ/大さじ3','砂糖/大さじ2','酒/100ml','水/300ml'],tags:['豚肉','和食','煮物'],cookTime:90,steps:[{text:'豚肉を大きめに切り下茹でする',duration:10,resource:'コンロ1'},{text:'調味料と水を鍋に入れ豚肉を加える',duration:3,resource:'コンロ1'},{text:'弱火でじっくり1時間煮込む',duration:60,resource:'コンロ1'},{text:'煮汁を煮詰めて仕上げる',duration:5,resource:'コンロ1'}],nutrition:{protein:4,vegetable:0,carb:0,other:0}},
+    ]
+  }
+};
+
+// ============================
+// 全レシピを統合的に扱うヘルパー
+// ============================
+function getAllRecipes() {
+  const all = [];
+  basicRecipeDB.forEach(r => all.push({...r, source:'basic', id:'b_'+r.title}));
+  shushokuRecipeDB.forEach(r => all.push({...r, source:'basic', id:'b_'+r.title}));
+  akariRecipeDB.forEach(r => all.push({...r, source:'akari', id:'a_'+r.title}));
+  hotcookRecipeDB.forEach(r => all.push({...r, source:'hotcook', id:'h_'+r.title}));
+  Object.entries(siteRecipeDB).forEach(([key, site]) => {
+    site.recipes.forEach(r => all.push({...r, source:key, id:'s_'+key+'_'+r.title, siteUrl:site.baseUrl, siteName:site.name, siteColor:site.color}));
+  });
+  myRecipes.forEach(r => all.push({...r, source:'my', id:'m_'+r.id}));
+  return all;
+}
+
+function getRecipeById(id) {
+  return getAllRecipes().find(r => r.id === id);
+}
+
+function normalizeCategory(cat) {
+  if (!cat) return '主菜';
+  if (cat.includes('スープ') || cat.includes('汁') || cat.includes('鍋')) return '汁物';
+  if (cat.includes('副菜') || cat === '定番副菜') return '副菜';
+  if (cat.includes('主菜') || cat === '定番主菜') return '主菜';
+  if (cat.includes('サラダ')) return 'サラダ';
+  if (cat.includes('主食') || cat.includes('ごはん') || cat.includes('麺') || cat.includes('丼')) return '主食';
+  return cat;
+}
+
+function recipeMatchesSlot(recipe, slotKey) {
+  const cat = normalizeCategory(recipe.category);
+  if (slotKey === 'shushoku') return cat === '主食';
+  if (slotKey === 'shusai') return cat === '主菜';
+  if (slotKey === 'fukusai') return cat === '副菜' || cat === 'サラダ';
+  if (slotKey === 'shirumono') return cat === '汁物';
+  return false;
+}
+
+const SOURCE_LABELS = {basic:'基本',akari:'あかり',hotcook:'ホットクック',kagome:'カゴメ',ajinomoto:'味の素',kikkoman:'キッコーマン',shirogohan:'白ごはん',my:'マイ'};
+const SOURCE_COLORS = {basic:'var(--primary)',akari:'var(--primary)',hotcook:'var(--hotcook)',kagome:'var(--kagome)',ajinomoto:'var(--ajinomoto)',kikkoman:'var(--kikkoman)',shirogohan:'var(--shirogohan)',my:'var(--primary)'};
+
+// ============================
+// State管理
+// ============================
+function saveState() {
+  localStorage.setItem('v3_week', JSON.stringify(weekPlan));
+  localStorage.setItem('v3_my', JSON.stringify(myRecipes));
+  localStorage.setItem('v3_shop', JSON.stringify(shoppingList));
+  localStorage.setItem('v3_cookday', selectedCookingDay);
+  localStorage.setItem('v3_ng', JSON.stringify([...ngRecipes]));
+}
+function loadState() {
+  try {
+    const w = localStorage.getItem('v3_week');
+    const m = localStorage.getItem('v3_my');
+    const s = localStorage.getItem('v3_shop');
+    const d = localStorage.getItem('v3_cookday');
+    if (w) weekPlan = JSON.parse(w);
+    if (m) myRecipes = JSON.parse(m);
+    if (s) shoppingList = JSON.parse(s);
+    if (d) selectedCookingDay = parseInt(d);
+    while (weekPlan.length < 7) weekPlan.push({shushoku:[],shusai:[],fukusai:[],shirumono:[],locked:false});
+    // 旧データ互換: shushokuスロットがない場合は追加
+    weekPlan.forEach(day => { if (!day.shushoku) day.shushoku = []; });
+    const ng = localStorage.getItem('v3_ng');
+    if (ng) ngRecipes = new Set(JSON.parse(ng));
+  } catch(e) { console.error('loadState error', e); }
+}
+function loadNotionSettings() {
+  try {
+    const n = localStorage.getItem('v3_notion');
+    if (n) notionSettings = JSON.parse(n);
+  } catch(e) {}
+  const t = document.getElementById('notion-token');
+  const p = document.getElementById('notion-page-id');
+  if (t) t.value = notionSettings.token || '';
+  if (p) p.value = notionSettings.parentPageId || '';
+}
+function saveNotionSettings() {
+  notionSettings.token = document.getElementById('notion-token').value;
+  notionSettings.parentPageId = document.getElementById('notion-page-id').value;
+  localStorage.setItem('v3_notion', JSON.stringify(notionSettings));
+  showToast('Notion設定を保存しました');
+  closeSettings();
+}
+
+// ============================
+// 初期化
+// ============================
+window.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  loadNotionSettings();
+  renderWeekBoard();
+  renderRecipeList();
+  updateShoppingDisplay();
+  updateNutrition();
+  updateCookingDaySelect();
+  if (selectedCookingDay >= 0) generateTimeline();
+});
+
+// ============================
+// UI: タブ・トースト
+// ============================
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================
+// 週間献立ボード
+// ============================
+function renderWeekBoard() {
+  const board = document.getElementById('week-board');
+  const today = new Date();
+  const todayDow = (today.getDay() + 6) % 7;
+
+  let html = '';
+  DAYS.forEach((day, i) => {
+    const headerClass = i === todayDow ? 'today' : i === 5 ? 'sat' : i === 6 ? 'sun' : '';
+    html += `<div class="day-column">
+      <div class="day-header ${headerClass}">${day}曜日</div>`;
+
+    SLOTS.forEach(slot => {
+      const items = weekPlan[i][slot] || [];
+      html += `<div class="slot-section"><div class="slot-label">${SLOT_ICONS[slot]} ${SLOT_LABELS[slot]}</div>`;
+      items.forEach((item, idx) => {
+        html += `<div class="slot-item" onclick="showRecipeDetail('${item.id}')">
+          <span class="slot-item-name">${item.title}</span>
+          <button class="remove-btn" onclick="event.stopPropagation();removeFromSlot(${i},'${slot}',${idx})">✕</button>
+        </div>`;
+      });
+      html += `<div class="slot-empty" onclick="openSlotModal(${i},'${slot}')">+ 追加</div></div>`;
+    });
+
+    html += `<div class="day-lock">
+      <label><input type="checkbox" ${weekPlan[i].locked?'checked':''} onchange="toggleLock(${i},this.checked)"> 固定</label>
+    </div></div>`;
+  });
+  board.innerHTML = html;
+  updateCookingDaySelect();
+}
+
+function removeFromSlot(dayIdx, slot, itemIdx) {
+  weekPlan[dayIdx][slot].splice(itemIdx, 1);
+  saveState(); renderWeekBoard(); updateNutrition();
+}
+function toggleLock(dayIdx, locked) {
+  weekPlan[dayIdx].locked = locked;
+  saveState();
+}
+function addToSlot(dayIdx, slot, recipe) {
+  weekPlan[dayIdx][slot].push({id: recipe.id, title: recipe.title});
+  saveState(); renderWeekBoard(); updateNutrition();
+}
+
+// ============================
+// 週間自動生成
+// ============================
+function isHotcookRecipe(recipe) {
+  if (!recipe) return false;
+  if (recipe.source === 'hotcook') return true;
+  return (recipe.steps||[]).some(s => s.resource === 'ホットクック');
+}
+
+function autoGenerateWeek() {
+  const all = getAllRecipes().filter(r => !ngRecipes.has(r.id));
+  const shushokuPool = all.filter(r => recipeMatchesSlot(r, 'shushoku'));
+  const shusaiPool = all.filter(r => recipeMatchesSlot(r, 'shusai'));
+  const fukusaiPool = all.filter(r => recipeMatchesSlot(r, 'fukusai'));
+  const shirumonoPool = all.filter(r => recipeMatchesSlot(r, 'shirumono'));
+
+  function pickRandom(pool, used, excludeHC) {
+    let available = pool.filter(r => !used.has(r.id));
+    // ホットクック1台制約: その日に既にHCレシピがあれば除外
+    if (excludeHC) available = available.filter(r => !isHotcookRecipe(r));
+    if (available.length === 0) {
+      // フォールバック: HC除外のみ
+      available = pool.filter(r => !used.has(r.id) && (!excludeHC || !isHotcookRecipe(r)));
+      if (available.length === 0) available = pool.filter(r => !excludeHC || !isHotcookRecipe(r));
+      if (available.length === 0) available = pool;
+    }
+    const picked = available[Math.floor(Math.random() * available.length)];
+    used.add(picked.id);
+    return picked;
+  }
+
+  const usedSk = new Set(), usedS = new Set(), usedF = new Set(), usedSh = new Set();
+
+  for (let i = 0; i < 7; i++) {
+    if (weekPlan[i].locked) continue;
+    // 主食を選択
+    const sk = shushokuPool.length > 0 ? pickRandom(shushokuPool, usedSk, false) : null;
+    // 1日1ホットクックまで
+    let hcUsed = sk && isHotcookRecipe(sk);
+    const s = pickRandom(shusaiPool, usedS, hcUsed);
+    hcUsed = hcUsed || isHotcookRecipe(s);
+    const f = pickRandom(fukusaiPool, usedF, hcUsed);
+    hcUsed = hcUsed || isHotcookRecipe(f);
+    const sh = pickRandom(shirumonoPool, usedSh, hcUsed);
+    weekPlan[i] = {
+      shushoku: sk ? [{id:sk.id, title:sk.title}] : [],
+      shusai: s ? [{id:s.id, title:s.title}] : [],
+      fukusai: f ? [{id:f.id, title:f.title}] : [],
+      shirumono: sh ? [{id:sh.id, title:sh.title}] : [],
+      locked: false
+    };
+  }
+  saveState(); renderWeekBoard(); updateNutrition();
+  showToast('週間献立を自動生成しました（ホットクックは1日1品まで）');
+}
+
+function clearWeekPlan() {
+  for (let i = 0; i < 7; i++) {
+    if (!weekPlan[i].locked) weekPlan[i] = {shushoku:[],shusai:[],fukusai:[],shirumono:[],locked:false};
+  }
+  saveState(); renderWeekBoard(); updateNutrition();
+  showToast('献立をクリアしました');
+}
+
+// ============================
+// スロット追加モーダル（ソース切替付き）
+// ============================
+function openSlotModal(dayIdx, slotKey) {
+  pendingSlotInfo = {dayIdx, slotKey};
+  slotSourceFilter = 'all';
+  document.getElementById('slot-search').value = '';
+  document.querySelectorAll('#slot-source-tabs .source-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector('#slot-source-tabs .source-tab[data-src="all"]').classList.add('active');
+  document.getElementById('slot-modal').classList.add('show');
+  filterSlotRecipes();
+}
+function closeSlotModal() {
+  document.getElementById('slot-modal').classList.remove('show');
+  pendingSlotInfo = null;
+}
+function setSlotSource(src, btn) {
+  slotSourceFilter = src;
+  document.querySelectorAll('#slot-source-tabs .source-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterSlotRecipes();
+}
+function filterSlotRecipes() {
+  if (!pendingSlotInfo) return;
+  const q = document.getElementById('slot-search').value.toLowerCase();
+  let pool = getAllRecipes().filter(r => recipeMatchesSlot(r, pendingSlotInfo.slotKey));
+  if (slotSourceFilter !== 'all') pool = pool.filter(r => r.source === slotSourceFilter);
+  if (q) pool = pool.filter(r => r.title.toLowerCase().includes(q) || (r.tags||[]).some(t => t.toLowerCase().includes(q)));
+
+  const list = document.getElementById('slot-recipe-list');
+  if (pool.length === 0) {
+    list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px">該当なし</p>';
+  } else {
+    list.innerHTML = pool.map(r => {
+      const srcLabel = SOURCE_LABELS[r.source] || r.source;
+      const srcTagClass = ['kagome','ajinomoto','kikkoman','shirogohan'].includes(r.source) ? `src-${r.source}` : '';
+      return `<div class="recipe-card" style="margin-bottom:8px" onclick="selectSlotRecipe('${r.id}')">
+        <div class="recipe-title">${r.title}</div>
+        <div class="recipe-meta">
+          <span class="recipe-tag ${srcTagClass}">${srcLabel}</span>
+          ${r.cookTime ? `<span class="recipe-tag time">${r.cookTime}分</span>` : ''}
+        </div>
+        <div class="recipe-desc">${r.desc||''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // サイトリンク
+  const linksEl = document.getElementById('slot-site-links');
+  if (slotSourceFilter !== 'all' && siteRecipeDB[slotSourceFilter]) {
+    const site = siteRecipeDB[slotSourceFilter];
+    const kw = q || '';
+    linksEl.innerHTML = `<a href="${site.searchUrl(kw)}" target="_blank" rel="noopener" class="site-link" style="color:${site.color}">
+      🔗 ${site.name}で${kw?'「'+kw+'」を':'レシピを'}直接検索 ↗</a>`;
+  } else if (slotSourceFilter === 'all' && q) {
+    let links = Object.entries(siteRecipeDB).map(([k,site]) =>
+      `<a href="${site.searchUrl(q)}" target="_blank" rel="noopener" class="site-link" style="color:${site.color};margin-right:12px">
+        🔗 ${site.name} ↗</a>`
+    ).join('');
+    linksEl.innerHTML = `<div style="font-size:.72rem;color:var(--text-light);margin-bottom:4px">各サイトで「${q}」を検索:</div>${links}`;
+  } else {
+    linksEl.innerHTML = '';
+  }
+}
+function selectSlotRecipe(recipeId) {
+  if (!pendingSlotInfo) return;
+  const recipe = getRecipeById(recipeId);
+  if (!recipe) return;
+
+  // ホットクック1台制約チェック
+  if (isHotcookRecipe(recipe)) {
+    const day = weekPlan[pendingSlotInfo.dayIdx];
+    const existing = [...(day.shusai||[]),...(day.fukusai||[]),...(day.shirumono||[])];
+    const hasHC = existing.some(item => {
+      const r = getRecipeById(item.id);
+      return r && isHotcookRecipe(r);
+    });
+    if (hasHC) {
+      if (!confirm('⚠️ この日は既にホットクック使用レシピがあります。\nホットクックは1台しかないため、2品目は順番待ちになります。\n追加しますか？')) return;
+    }
+  }
+
+  addToSlot(pendingSlotInfo.dayIdx, pendingSlotInfo.slotKey, recipe);
+  closeSlotModal();
+  showToast(recipe.title + ' を追加しました');
+}
+
+// ============================
+// 調理日選択
+// ============================
+function updateCookingDaySelect() {
+  const sel = document.getElementById('cooking-day-select');
+  sel.innerHTML = '<option value="">調理する日を選択...</option>';
+  DAYS.forEach((d, i) => {
+    const items = [...weekPlan[i].shusai, ...weekPlan[i].fukusai, ...weekPlan[i].shirumono];
+    if (items.length > 0) {
+      sel.innerHTML += `<option value="${i}" ${selectedCookingDay===i?'selected':''}>${d}曜日（${items.length}品）</option>`;
+    }
+  });
+}
+function selectCookingDay() {
+  const v = document.getElementById('cooking-day-select').value;
+  selectedCookingDay = v === '' ? -1 : parseInt(v);
+  saveState();
+}
+function goToCooking() {
+  if (selectedCookingDay < 0) { showToast('調理する日を選んでください'); return; }
+  document.getElementById('cooking-source-select').value = 'weekly';
+  document.getElementById('direct-recipe-picker').style.display = 'none';
+  generateTimeline();
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-cooking').classList.add('active');
+  document.querySelectorAll('.tab-btn')[2].classList.add('active');
+}
+
+// ============================
+// 直接レシピ選択モード
+// ============================
+let directSelectedRecipes = [];
+
+function switchCookingSource() {
+  const v = document.getElementById('cooking-source-select').value;
+  const picker = document.getElementById('direct-recipe-picker');
+  if (v === 'direct') {
+    picker.style.display = 'block';
+    renderDirectRecipePicker();
+    renderDirectSelected();
+  } else {
+    picker.style.display = 'none';
+    if (selectedCookingDay >= 0) generateTimeline();
+  }
+}
+
+function renderDirectRecipePicker() {
+  const q = (document.getElementById('direct-recipe-search')?.value || '').toLowerCase();
+  const all = getAllRecipes().filter(r => r.steps && r.steps.length > 0);
+  let filtered = all;
+  if (q) filtered = filtered.filter(r =>
+    r.title.toLowerCase().includes(q) || r.desc?.toLowerCase().includes(q) ||
+    (r.tags||[]).some(t => t.toLowerCase().includes(q)) || r.category?.toLowerCase().includes(q)
+  );
+  filtered = filtered.slice(0, 30);
+  const list = document.getElementById('direct-recipe-list');
+  list.innerHTML = filtered.map(r => {
+    const isSelected = directSelectedRecipes.some(s => s.id === r.id);
+    const catIcon = r.category?.includes('主菜') ? '🥩' : r.category?.includes('副菜') ? '🥗' : r.category?.includes('汁') || r.category?.includes('鍋') || r.category?.includes('スープ') ? '🍲' : '🍽️';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;border-bottom:1px solid var(--border);background:${isSelected?'rgba(74,124,89,.08)':'transparent'}"
+      onclick="toggleDirectRecipe('${r.id}')">
+      <span style="font-size:1.1rem">${isSelected ? '✅' : '⬜'}</span>
+      <span style="font-size:.85rem">${catIcon} <strong>${r.title}</strong></span>
+      <span style="font-size:.7rem;color:var(--text-light);margin-left:auto">${r.cookTime||'?'}分</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleDirectRecipe(id) {
+  const idx = directSelectedRecipes.findIndex(s => s.id === id);
+  if (idx >= 0) directSelectedRecipes.splice(idx, 1);
+  else directSelectedRecipes.push({ id });
+  renderDirectRecipePicker();
+  renderDirectSelected();
+}
+
+function renderDirectSelected() {
+  const el = document.getElementById('direct-recipe-selected');
+  if (directSelectedRecipes.length === 0) {
+    el.innerHTML = '<span style="font-size:.8rem;color:var(--text-light)">レシピを選択してください（複数OK）</span>';
+    return;
+  }
+  el.innerHTML = directSelectedRecipes.map(s => {
+    const r = getRecipeById(s.id);
+    return r ? `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--primary);color:white;padding:4px 10px;border-radius:16px;font-size:.78rem">
+      ${r.title} <span style="cursor:pointer;opacity:.7" onclick="event.stopPropagation();toggleDirectRecipe('${s.id}')">✕</span>
+    </span>` : '';
+  }).join('');
+}
+
+function generateTimelineDirect() {
+  if (directSelectedRecipes.length === 0) { showToast('レシピを1つ以上選んでください'); return; }
+  const recipes = directSelectedRecipes.map(s => getRecipeById(s.id)).filter(Boolean);
+  generateTimelineFromRecipes(recipes, '選択レシピの並行調理タイムライン');
+}
+
+// ============================
+// 週間調理サマリー
+// ============================
+let weekDayStats = null; // キャッシュ
+
+function calcDayStats(dayIdx) {
+  const day = weekPlan[dayIdx];
+  const allItems = [...(day.shusai||[]),...(day.fukusai||[]),...(day.shirumono||[])];
+  if (allItems.length === 0) return null;
+
+  const recipes = allItems.map(item => getRecipeById(item.id)).filter(Boolean);
+  if (recipes.length === 0) return null;
+
+  // ステップ収集（generateTimelineFromRecipesと同じロジック）
+  const steps = [];
+  recipes.forEach((recipe, rIdx) => {
+    const preSteps = generatePreSteps(recipe);
+    preSteps.forEach((ps, psIdx) => {
+      const s = {
+        recipeIdx: rIdx, recipeName: recipe.title, stepIdx: psIdx,
+        text: ps.text, duration: ps.duration, resource: ps.resource,
+        startTime: 0, passive: false, isPreStep: true, prepTag: ps.tag
+      };
+      s.passive = isPassiveStep(s);
+      if (ps.duration >= 5 && ['🧊 解凍','🍚 浸水','💧 水戻し','🧱 水切り','💧 アク抜き','🐟 下処理','🥚 常温戻し'].includes(ps.tag)) s.passive = true;
+      steps.push(s);
+    });
+    const recipeSteps = recipe.steps || [];
+    const defaultDur = Math.ceil((recipe.cookTime||30) / Math.max(recipeSteps.length, 1));
+    recipeSteps.forEach((step, sIdx) => {
+      const isObj = typeof step === 'object' && step !== null;
+      const s = {
+        recipeIdx: rIdx, recipeName: recipe.title, stepIdx: preSteps.length + sIdx,
+        text: isObj ? step.text : step,
+        duration: isObj && step.duration ? step.duration : defaultDur,
+        resource: isObj && step.resource ? step.resource : guessResource(isObj ? step.text : step, sIdx, recipeSteps.length),
+        startTime: 0, passive: false
+      };
+      s.passive = isPassiveStep(s);
+      steps.push(s);
+    });
+  });
+
+  const scheduled = scheduleStepsV3(steps, recipes);
+  const maxTime = Math.max(...scheduled.map(s => s.startTime + s.duration));
+
+  // 料理人の実稼働時間
+  const cookBusy = scheduled.filter(s => {
+    if (s.resource === '手作業' && s.passive) return false;
+    if (s.resource === '手作業') return true;
+    if (!s.passive) return true;
+    return false;
+  });
+  const intervals = cookBusy.map(s => [s.startTime, s.startTime + s.duration]).sort((a,b) => a[0]-b[0]);
+  let activeTime = 0, mergedEnd = 0;
+  intervals.forEach(([s, e]) => {
+    if (s >= mergedEnd) { activeTime += (e - s); mergedEnd = e; }
+    else if (e > mergedEnd) { activeTime += (e - mergedEnd); mergedEnd = e; }
+  });
+
+  const baseCookTime = recipes.reduce((sum, r) => sum + (r.cookTime || 0), 0);
+  const prepAll = scheduled.filter(s => s.isPreStep);
+  const prepActiveTime = prepAll.filter(s => !s.passive).reduce((sum, s) => sum + s.duration, 0);
+  const prepPassiveMax = prepAll.filter(s => s.passive).reduce((mx, s) => Math.max(mx, s.duration), 0);
+  const seqTime = baseCookTime + prepActiveTime + prepPassiveMax;
+  const savedTime = seqTime - maxTime;
+
+  const hasHotcook = scheduled.some(s => s.resource === 'ホットクック');
+  const usedEquip = [...new Set(scheduled.filter(s => s.resource !== '手作業').map(s => s.resource))];
+
+  return {
+    dayIdx,
+    dayName: DAYS[dayIdx],
+    itemCount: allItems.length,
+    recipeNames: recipes.map(r => r.title),
+    totalTime: maxTime,
+    seqTime,
+    activeTime,
+    idleTime: maxTime - activeTime,
+    savedTime,
+    savedPct: seqTime > 0 ? Math.round((savedTime / seqTime) * 100) : 0,
+    utilPct: maxTime > 0 ? Math.round((activeTime / maxTime) * 100) : 0,
+    hasHotcook,
+    usedEquip
+  };
+}
+
+function calcWeekSummary() {
+  weekDayStats = [];
+  for (let i = 0; i < 7; i++) {
+    const stat = calcDayStats(i);
+    if (stat) weekDayStats.push(stat);
+  }
+  renderWeekSummary();
+  showToast(`${weekDayStats.length}日分の調理効率を分析しました`);
+}
+
+function renderWeekSummary() {
+  const el = document.getElementById('week-summary');
+  if (!weekDayStats || weekDayStats.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:12px;font-size:.82rem;color:var(--text-light)">献立が設定されている日がありません</div>';
+    return;
+  }
+
+  const sortKey = document.getElementById('week-sort').value;
+  let sorted = [...weekDayStats];
+  switch(sortKey) {
+    case 'active-asc':  sorted.sort((a,b) => a.activeTime - b.activeTime); break;
+    case 'active-desc': sorted.sort((a,b) => b.activeTime - a.activeTime); break;
+    case 'total-asc':   sorted.sort((a,b) => a.totalTime - b.totalTime); break;
+    case 'total-desc':  sorted.sort((a,b) => b.totalTime - a.totalTime); break;
+    case 'saving-desc': sorted.sort((a,b) => b.savedPct - a.savedPct); break;
+    default:            sorted.sort((a,b) => a.dayIdx - b.dayIdx);
+  }
+
+  const maxActive = Math.max(...sorted.map(s => s.activeTime), 1);
+  const maxTotal  = Math.max(...sorted.map(s => s.totalTime), 1);
+
+  const dayColors = ['#e8a838','#4a7c59','#2980b9','#8e44ad','#e67e22','#3498db','#c0392b'];
+
+  const cards = sorted.map((s, idx) => {
+    const rankClass = idx === 0 && (sortKey === 'active-asc' || sortKey === 'total-asc' || sortKey === 'saving-desc') ? 'rank-1' : '';
+    const barWidth = sortKey.includes('active') ? (s.activeTime / maxActive * 100) : (s.totalTime / maxTotal * 100);
+    const barColor = s.utilPct < 40 ? 'var(--success)' : s.utilPct < 70 ? 'var(--accent)' : 'var(--danger)';
+    const hcBadge = s.hasHotcook ? '<span style="font-size:.65rem;background:var(--hotcook);color:white;padding:1px 5px;border-radius:4px;margin-left:2px">HC</span>' : '';
+
+    return `<div class="day-summary-card ${rankClass}" onclick="goToCookingDay(${s.dayIdx})">
+      <div class="day-name" style="background:${dayColors[s.dayIdx]}">${s.dayName}</div>${hcBadge}
+      <div class="summary-stat">🍽️ ${s.itemCount}品</div>
+      <div class="summary-stat">⏱️ 合計 <strong>${s.totalTime}分</strong></div>
+      <div class="summary-stat">👩‍🍳 手間 <strong>${s.activeTime}分</strong></div>
+      <div class="summary-stat">🆓 空き <strong>${s.idleTime}分</strong></div>
+      <div class="summary-stat" style="color:var(--success)">🚀 ${s.savedTime > 0 ? '-'+s.savedTime+'分' : '±0'}</div>
+      <div class="summary-bar"><div class="summary-bar-fill" style="width:${s.utilPct}%;background:${barColor}"></div></div>
+      <div style="font-size:.6rem;color:var(--text-light);margin-top:2px">稼働率 ${s.utilPct}%</div>
+    </div>`;
+  }).join('');
+
+  // 週間集計
+  const totalActive = sorted.reduce((s, d) => s + d.activeTime, 0);
+  const totalAll = sorted.reduce((s, d) => s + d.totalTime, 0);
+  const totalSaved = sorted.reduce((s, d) => s + d.savedTime, 0);
+  const avgUtil = sorted.length > 0 ? Math.round(sorted.reduce((s, d) => s + d.utilPct, 0) / sorted.length) : 0;
+  const easiestDay = [...sorted].sort((a,b) => a.activeTime - b.activeTime)[0];
+  const hardestDay = [...sorted].sort((a,b) => b.activeTime - a.activeTime)[0];
+
+  el.innerHTML = `
+    <div class="week-summary-grid">${cards}</div>
+    <div class="week-summary-totals">
+      <span>📅 <strong>${sorted.length}日分</strong></span>
+      <span>👩‍🍳 合計手間 <strong>${totalActive}分</strong></span>
+      <span>⏱️ 合計調理 <strong>${totalAll}分</strong></span>
+      <span>🚀 合計時短 <strong>${totalSaved > 0 ? '-'+totalSaved+'分' : '0分'}</strong></span>
+      <span>📊 平均稼働率 <strong>${avgUtil}%</strong></span>
+      <span>😊 最ラク <strong>${easiestDay.dayName}（${easiestDay.activeTime}分）</strong></span>
+      <span>💪 最大変 <strong>${hardestDay.dayName}（${hardestDay.activeTime}分）</strong></span>
+    </div>`;
+}
+
+function goToCookingDay(dayIdx) {
+  selectedCookingDay = dayIdx;
+  document.getElementById('cooking-day-select').value = dayIdx;
+  saveState();
+  goToCooking();
+}
+
+// ============================
+// レシピ一覧
+// ============================
+function renderRecipeList() {
+  const all = getAllRecipes();
+  const q = (document.getElementById('recipe-search')?.value || '').toLowerCase();
+
+  let filtered = all;
+  if (currentSourceFilter !== 'all') filtered = filtered.filter(r => r.source === currentSourceFilter);
+  if (currentCategoryFilter !== 'all') filtered = filtered.filter(r => normalizeCategory(r.category) === currentCategoryFilter);
+  if (q) filtered = filtered.filter(r =>
+    r.title.toLowerCase().includes(q) || r.desc?.toLowerCase().includes(q) ||
+    (r.tags||[]).some(t => t.toLowerCase().includes(q))
+  );
+
+  const list = document.getElementById('recipe-list');
+  const empty = document.getElementById('recipe-empty');
+
+  if (filtered.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  list.innerHTML = filtered.map(r => {
+    const catNorm = normalizeCategory(r.category);
+    const srcLabel = SOURCE_LABELS[r.source] || r.source;
+    const srcTagClass = ['kagome','ajinomoto','kikkoman','shirogohan'].includes(r.source) ? `src-${r.source}` : '';
+    const siteLink = r.siteUrl ? `<a href="${r.siteUrl}" target="_blank" rel="noopener" class="site-link" onclick="event.stopPropagation()">🔗 ${r.siteName}で見る ↗</a>` : '';
+    const isNG = ngRecipes.has(r.id);
+    return `<div class="recipe-card${isNG ? ' ng-recipe' : ''}" onclick="showRecipeDetail('${r.id}')">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="recipe-title" style="flex:1">${isNG ? '🚫 ' : ''}${r.title}</div>
+        <button class="btn btn-sm ${isNG ? 'btn-danger' : 'btn-outline'}" onclick="event.stopPropagation();toggleNG('${r.id}')" style="font-size:.7rem;padding:3px 8px;white-space:nowrap" title="自動生成から除外/復帰">${isNG ? 'NG解除' : 'NG'}</button>
+      </div>
+      <div class="recipe-meta">
+        <span class="recipe-tag cat">${catNorm}</span>
+        <span class="recipe-tag time">${r.cookTime||'?'}分</span>
+        <span class="recipe-tag ${srcTagClass}">${srcLabel}</span>
+        ${(r.tags||[]).slice(0,3).map(t => `<span class="recipe-tag">${t}</span>`).join('')}
+      </div>
+      <div class="recipe-desc">${r.desc||''}</div>
+      ${siteLink}
+      ${r.source === 'my' ? `<div class="recipe-actions">
+        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();editRecipe('${r.id}')">編集</button>
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteRecipe('${r.id}')" style="font-size:.78rem;padding:6px 10px">削除</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleNG(id) {
+  if (ngRecipes.has(id)) ngRecipes.delete(id);
+  else ngRecipes.add(id);
+  saveState(); renderRecipeList();
+}
+
+function filterRecipes() { renderRecipeList(); }
+function filterBySource(src, btn) {
+  currentSourceFilter = src;
+  document.querySelectorAll('#recipe-filters .btn-outline, #recipe-filters .btn-sm').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '';
+    b.style.color = '';
+  });
+  btn.classList.add('active');
+  if (src !== 'all' && SOURCE_COLORS[src]) {
+    btn.style.background = SOURCE_COLORS[src].replace('var(','').replace(')','');
+  }
+  renderRecipeList();
+}
+function filterByCategory(cat, btn) {
+  currentCategoryFilter = cat;
+  document.querySelectorAll('#category-filters .btn-outline').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderRecipeList();
+}
+
+// ============================
+// レシピ詳細
+// ============================
+function showRecipeDetail(id) {
+  const r = getRecipeById(id);
+  if (!r) return;
+  const cat = normalizeCategory(r.category);
+  const ingredients = (r.ingredients||[]).map(ing => {
+    if (typeof ing === 'string') { const p = ing.split('/'); return {name:p[0],qty:p[1]||''}; }
+    return ing;
+  });
+  const steps = (r.steps||[]).map(s => typeof s === 'string' ? s : s.text);
+  const siteLink = r.siteUrl ? `<a href="${r.siteUrl}" target="_blank" rel="noopener" class="site-link" style="font-size:.85rem">🔗 ${r.siteName}でレシピを見る ↗</a>` : '';
+
+  document.getElementById('detail-content').innerHTML = `
+    <h2 style="font-size:1.1rem;margin-bottom:8px">${r.title}</h2>
+    <div class="recipe-meta" style="margin-bottom:10px">
+      <span class="recipe-tag cat">${cat}</span>
+      <span class="recipe-tag time">${r.cookTime||'?'}分</span>
+      ${(r.tags||[]).map(t=>`<span class="recipe-tag">${t}</span>`).join('')}
+    </div>
+    <p style="font-size:.88rem;color:var(--text-light);margin-bottom:14px;line-height:1.5">${r.desc||''}</p>
+    ${siteLink ? `<div style="margin-bottom:14px">${siteLink}</div>` : ''}
+    <h4 style="font-size:.9rem;margin-bottom:6px">材料</h4>
+    <ul style="margin:0 0 14px 18px;font-size:.88rem">${ingredients.map(i=>`<li>${i.name} ${i.qty?'— '+i.qty:''}</li>`).join('')}</ul>
+    <h4 style="font-size:.9rem;margin-bottom:6px">手順</h4>
+    <ol style="margin:0 0 14px 18px;font-size:.88rem;line-height:1.6">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+  `;
+  document.getElementById('detail-modal').classList.add('show');
+}
+function closeDetailModal() { document.getElementById('detail-modal').classList.remove('show'); }
+
+// ============================
+// マイレシピ CRUD
+// ============================
+function openRecipeModal() {
+  editingRecipeId = null;
+  document.getElementById('recipe-modal-title').textContent = 'レシピを作成';
+  ['rm-title','rm-desc','rm-ingredients','rm-tags','rm-steps'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('rm-category').value = '主菜';
+  document.getElementById('rm-time').value = '30';
+  document.getElementById('recipe-modal').classList.add('show');
+}
+function closeRecipeModal() { document.getElementById('recipe-modal').classList.remove('show'); }
+
+function editRecipe(id) {
+  const r = myRecipes.find(r => 'm_'+r.id === id);
+  if (!r) return;
+  editingRecipeId = r.id;
+  document.getElementById('recipe-modal-title').textContent = 'レシピを編集';
+  document.getElementById('rm-title').value = r.title;
+  document.getElementById('rm-category').value = r.category || '主菜';
+  document.getElementById('rm-desc').value = r.desc || '';
+  document.getElementById('rm-time').value = r.cookTime || 30;
+  document.getElementById('rm-ingredients').value = (r.ingredients||[]).map(i => typeof i==='string'?i:`${i.name}/${i.qty}`).join('\n');
+  document.getElementById('rm-tags').value = (r.tags||[]).join(', ');
+  document.getElementById('rm-steps').value = (r.steps||[]).map(s => typeof s==='string'?s:s.text).join('\n');
+  document.getElementById('recipe-modal').classList.add('show');
+}
+
+function deleteRecipe(id) {
+  const idx = myRecipes.findIndex(r => 'm_'+r.id === id);
+  if (idx < 0) return;
+  if (!confirm(myRecipes[idx].title + ' を削除しますか？')) return;
+  myRecipes.splice(idx, 1);
+  saveState(); renderRecipeList();
+  showToast('レシピを削除しました');
+}
+
+function saveRecipe() {
+  const title = document.getElementById('rm-title').value.trim();
+  if (!title) { showToast('レシピ名を入力してください'); return; }
+
+  const recipe = {
+    id: editingRecipeId || Date.now(),
+    title,
+    category: document.getElementById('rm-category').value,
+    desc: document.getElementById('rm-desc').value.trim(),
+    cookTime: parseInt(document.getElementById('rm-time').value) || 30,
+    ingredients: document.getElementById('rm-ingredients').value.trim().split('\n').filter(l=>l.trim()),
+    tags: document.getElementById('rm-tags').value.split(',').map(t=>t.trim()).filter(t=>t),
+    steps: document.getElementById('rm-steps').value.trim().split('\n').filter(l=>l.trim()),
+    nutrition: {protein:2,vegetable:2,carb:1,other:0}
+  };
+
+  if (editingRecipeId) {
+    const idx = myRecipes.findIndex(r => r.id === editingRecipeId);
+    if (idx >= 0) myRecipes[idx] = recipe;
+  } else {
+    myRecipes.push(recipe);
+  }
+  saveState(); renderRecipeList(); closeRecipeModal();
+  showToast(title + ' を保存しました');
+}
+
+// ============================
+// 並行調理タイムライン V3
+// ============================
+// リソースモデル:
+//   「料理人」= 1人。アクティブ作業（切る、炒める等）は1度に1つだけ
+//   「設備」= コンロ1,コンロ2,グリル,オーブン,電子レンジ,炊飯器 各1台
+//   パッシブステップ（煮込む、蒸す、炊飯等）= 設備だけ使い、料理人は解放される
+// ============================
+const RESOURCE_ORDER = ['👩‍🍳 料理人','コンロ1','コンロ2','グリル','オーブン','電子レンジ','炊飯器','ホットクック'];
+
+// パッシブ判定: 手を離せるステップかどうか
+const PASSIVE_KEYWORDS = ['煮込','煮る','蒸す','蒸し','蒸ら','炊飯','炊く','焼く','オーブン','放置','漬け','戻す','冷ます','冷やす','寝かせ','浸水','砂抜き','アク抜き'];
+
+function isPassiveStep(step) {
+  if (step.resource === '手作業') {
+    return PASSIVE_KEYWORDS.some(kw => step.text.includes(kw)) && step.duration >= 3;
+  }
+  if (['炊飯器','オーブン','ホットクック'].includes(step.resource)) return true;
+  if (step.resource === '電子レンジ') return true;
+  if (PASSIVE_KEYWORDS.some(kw => step.text.includes(kw))) return true;
+  if (step.duration >= 8) return true;
+  return false;
+}
+
+// ============================
+// 自動下ごしらえステップ生成
+// 食材から解凍・浸水・水戻しなどを自動判定し、レシピの先頭に挿入
+// ============================
+const PREP_RULES = [
+  // ============ 肉・魚の下ごしらえ ============
+  // 肉類の解凍（冷凍保存を前提）
+  { match: /鶏もも肉|鶏むね|鶏肉|鶏ひき肉|豚ロース|豚バラ|豚こま|豚薄切り|豚肉|牛薄切り|牛肉|牛バラ|合い?挽き?肉|ひき肉|合いびき|ベーコン|ソーセージ|ウインナー/,
+    text: (m) => `${m}を冷蔵庫から出し常温に戻す（約15分）`, duration: 15, resource: '手作業', tag: '🧊 解凍',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('解凍') || s.text.includes('常温に戻す'))),
+    dedup: 'meat_thaw' // 同じdedupキーは1回のみ
+  },
+  // 魚の下処理
+  { match: /鮭|さば|ぶり|たら|白身魚|切り身|えび|いか|あさり|しじみ|ほたて/,
+    text: (m) => {
+      if (/あさり|しじみ/.test(m)) return `${m}の砂抜き（塩水に浸す）`;
+      if (/えび/.test(m)) return `${m}の背わたを取り、殻をむく`;
+      if (/いか/.test(m)) return `${m}のわたと軟骨を取り除く`;
+      return `${m}に塩をふり10分置き、水気をペーパーで拭く（臭み取り）`;
+    },
+    duration: (m) => /あさり|しじみ/.test(m) ? 30 : 10,
+    resource: '手作業', tag: (m) => /あさり|しじみ/.test(m) ? '🐚 砂抜き' : '🐟 下処理',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('塩をふ') || s.text.includes('臭み') || s.text.includes('砂抜き') || s.text.includes('背わた')))
+  },
+
+  // ============ 米・乾物の戻し ============
+  { match: /^米\//,
+    text: () => '米を研いで浸水させる（30分〜）', duration: 30, resource: '手作業', tag: '🍚 浸水',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('研') || s.text.includes('浸水'))),
+    dedup: 'rice'
+  },
+  { match: /乾燥ひじき|ひじき/,
+    text: () => '乾燥ひじきを水で戻す（20分）', duration: 20, resource: '手作業', tag: '💧 水戻し',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('ひじき') && (s.text.includes('戻') || s.text.includes('水'))),
+    dedup: 'hijiki'
+  },
+  { match: /切り干し大根/,
+    text: () => '切り干し大根を水で戻す（15分）', duration: 15, resource: '手作業', tag: '💧 水戻し',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('戻す')),
+    dedup: 'kiriboshi'
+  },
+  { match: /干ししいたけ|乾燥しいたけ/,
+    text: () => '干ししいたけをぬるま湯で戻す（20分）', duration: 20, resource: '手作業', tag: '💧 水戻し',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('戻')),
+    dedup: 'shiitake'
+  },
+  { match: /カットわかめ|乾燥わかめ/,
+    text: () => 'カットわかめを水で戻す（5分）', duration: 5, resource: '手作業', tag: '💧 水戻し',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('わかめ') && s.text.includes('戻')),
+    dedup: 'wakame'
+  },
+  { match: /高野豆腐/,
+    text: () => '高野豆腐をぬるま湯で戻す（10分）', duration: 10, resource: '手作業', tag: '💧 水戻し',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('戻')),
+    dedup: 'koya'
+  },
+  { match: /春雨|はるさめ/,
+    text: () => '春雨を熱湯で戻す（5分）', duration: 5, resource: '手作業', tag: '💧 水戻し',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('戻')),
+    dedup: 'harusame'
+  },
+
+  // ============ 豆腐・こんにゃく ============
+  { match: /豆腐|絹豆腐|木綿豆腐|絹ごし豆腐/,
+    text: () => '豆腐をペーパーで包み重しをして水切り（10分）', duration: 10, resource: '手作業', tag: '🧱 水切り',
+    check: (steps, ings, recipe) => {
+      if (/汁物|スープ|鍋/.test(recipe.category || '')) return false;
+      return !steps.some(s => s.text && s.text.includes('水切り'));
+    },
+    dedup: 'tofu'
+  },
+  { match: /こんにゃく|しらたき/,
+    text: (m) => `${m}を塩もみし、熱湯でアク抜き（5分）`, duration: 5, resource: 'コンロ1', tag: '♨️ アク抜き',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('アク抜き') || s.text.includes('こんにゃく') && s.text.includes('茹で'))),
+    dedup: 'konnyaku'
+  },
+
+  // ============ 野菜の下ごしらえ ============
+  { match: /ごぼう/,
+    text: () => 'ごぼうの皮をこそぎ、水にさらしてアク抜き（5分）', duration: 5, resource: '手作業', tag: '💧 アク抜き',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('アク') || s.text.includes('水にさら'))),
+    dedup: 'gobou'
+  },
+  { match: /なす|茄子|ナス/,
+    text: () => 'なすを切り、塩水に浸けてアク抜き＋変色防止（10分）', duration: 10, resource: '手作業', tag: '💧 アク抜き',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('アク') || s.text.includes('塩水'))),
+    dedup: 'nasu'
+  },
+  { match: /れんこん|蓮根/,
+    text: () => 'れんこんの皮をむき、酢水に浸けてアク抜き＋変色防止（5分）', duration: 5, resource: '手作業', tag: '💧 アク抜き',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('アク') || s.text.includes('酢水'))),
+    dedup: 'renkon'
+  },
+  { match: /里芋/,
+    text: () => '里芋の皮をむき、塩でもんでぬめりを取り水洗い', duration: 5, resource: '手作業', tag: '🥔 下処理',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('ぬめり') || s.text.includes('里芋') && s.text.includes('皮'))),
+    dedup: 'satoimo'
+  },
+  { match: /ほうれん草/,
+    text: () => 'ほうれん草の根元を十字に切り、水に浸けて土を落とす', duration: 3, resource: '手作業', tag: '🥬 洗い',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('洗') || s.text.includes('水に') || s.text.includes('アク抜き'))),
+    dedup: 'hourensou'
+  },
+  { match: /ブロッコリー/,
+    text: () => 'ブロッコリーを小房に分け、水に浸けて汚れを落とす', duration: 3, resource: '手作業', tag: '🥬 洗い',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('小房') || s.text.includes('洗'))),
+    dedup: 'broccoli'
+  },
+  { match: /もやし/,
+    text: () => 'もやしをサッと水洗いし、水気を切る', duration: 2, resource: '手作業', tag: '🥬 洗い',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('もやし') && s.text.includes('洗')),
+    dedup: 'moyashi'
+  },
+  { match: /大根(?!おろし)/,
+    text: (m, ings, recipe) => {
+      // 煮物用の大根は下茹でが必要
+      const isNimono = (recipe.category||'').includes('主菜') || (recipe.steps||[]).some(s => (s.text||'').includes('煮'));
+      if (isNimono) return '大根の皮をむき、面取りして米のとぎ汁で下茹で（10分）';
+      return null; // 煮物でなければ不要
+    },
+    duration: 10, resource: 'コンロ1', tag: '♨️ 下茹で',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('下茹で') || s.text.includes('面取り'))),
+    dedup: 'daikon_boil'
+  },
+  { match: /たけのこ|筍|タケノコ/,
+    text: () => 'たけのこのアク抜き（米ぬかで下茹で — 事前処理推奨）', duration: 10, resource: 'コンロ1', tag: '♨️ アク抜き',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('アク')),
+    dedup: 'takenoko'
+  },
+  { match: /にんにく/,
+    text: () => 'にんにくの皮をむく', duration: 1, resource: '手作業', tag: '🔪 皮むき',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('にんにく') && (s.text.includes('皮') || s.text.includes('つぶ') || s.text.includes('みじん'))),
+    dedup: 'ninniku'
+  },
+  { match: /しょうが|生姜/,
+    text: () => 'しょうがの皮をむく', duration: 1, resource: '手作業', tag: '🔪 皮むき',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('しょうが') || s.text.includes('生姜')) && (s.text.includes('おろ') || s.text.includes('皮') || s.text.includes('みじん'))),
+    dedup: 'shouga'
+  },
+
+  // ============ 卵・乳製品 ============
+  { match: /^卵\//,
+    text: () => '卵を冷蔵庫から出し常温に戻す（10分）', duration: 10, resource: '手作業', tag: '🥚 常温戻し',
+    check: (steps) => !steps.some(s => s.text && s.text.includes('常温')),
+    dedup: 'egg'
+  },
+  { match: /バター/,
+    text: () => 'バターを常温に戻す（柔らかくする）', duration: 15, resource: '手作業', tag: '🧈 常温戻し',
+    check: (steps, ings, recipe) => {
+      // 焼き菓子やソースなど、バターを練る系のみ
+      const needsSoft = (recipe.steps||[]).some(s => (s.text||'').match(/混ぜ|練|クリーム|こね/));
+      return needsSoft && !steps.some(s => s.text && s.text.includes('常温'));
+    },
+    dedup: 'butter'
+  },
+
+  // ============ 麺・パスタ ============
+  { match: /パスタ|スパゲッティ|マカロニ/,
+    text: () => 'パスタ用のたっぷりの湯を沸かす', duration: 8, resource: 'コンロ2', tag: '♨️ 湯沸かし',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('湯を沸') || s.text.includes('茹で'))),
+    dedup: 'pasta_water'
+  },
+  { match: /そうめん|うどん|そば/,
+    text: (m) => `${m}用のたっぷりの湯を沸かす`, duration: 8, resource: 'コンロ2', tag: '♨️ 湯沸かし',
+    check: (steps) => !steps.some(s => s.text && (s.text.includes('湯を沸') || s.text.includes('茹で'))),
+    dedup: 'noodle_water'
+  }
+];
+
+function generatePreSteps(recipe) {
+  const ingredients = recipe.ingredients || [];
+  const existingSteps = recipe.steps || [];
+  const preSteps = [];
+  const usedDedup = new Set();
+
+  ingredients.forEach(ing => {
+    const ingStr = typeof ing === 'string' ? ing : String(ing);
+    const ingName = ingStr.split('/')[0];
+    PREP_RULES.forEach(rule => {
+      const m = ingName.match(rule.match);
+      if (!m) return;
+      // 重複防止: dedup キーがあれば1回のみ
+      const dedupKey = rule.dedup || (typeof rule.tag === 'function' ? rule.tag(m[0]) : rule.tag) + '_' + m[0];
+      if (usedDedup.has(dedupKey)) return;
+      // checkで既存ステップに含まれていないか確認
+      const shouldAdd = rule.check ? rule.check(existingSteps, ingredients, recipe) : true;
+      if (!shouldAdd) return;
+      // テキスト生成（nullを返す場合はスキップ）
+      const text = rule.text(m[0], ingredients, recipe);
+      if (!text) return;
+      usedDedup.add(dedupKey);
+      const duration = typeof rule.duration === 'function' ? rule.duration(m[0]) : rule.duration;
+      const tag = typeof rule.tag === 'function' ? rule.tag(m[0]) : rule.tag;
+      preSteps.push({
+        text,
+        duration,
+        resource: rule.resource,
+        isPreStep: true,
+        tag
+      });
+    });
+  });
+
+  return preSteps;
+}
+
+function generateTimeline() {
+  if (selectedCookingDay < 0) return;
+  const day = weekPlan[selectedCookingDay];
+  const allItems = [...(day.shusai||[]),...(day.fukusai||[]),...(day.shirumono||[])];
+  if (allItems.length === 0) {
+    document.getElementById('timeline-empty').style.display = 'block';
+    document.getElementById('timeline-container').innerHTML = '';
+    document.getElementById('timer-card').style.display = 'none';
+    document.getElementById('efficiency-summary').style.display = 'none';
+    return;
+  }
+  const recipes = allItems.map(item => getRecipeById(item.id)).filter(Boolean);
+  generateTimelineFromRecipes(recipes, `${DAYS[selectedCookingDay]}曜日の並行調理タイムライン`);
+}
+
+function generateTimelineFromRecipes(recipes, title) {
+  const emptyEl = document.getElementById('timeline-empty');
+  const container = document.getElementById('timeline-container');
+  const timerCard = document.getElementById('timer-card');
+  const effSummary = document.getElementById('efficiency-summary');
+
+  if (recipes.length === 0) {
+    emptyEl.style.display = 'block';
+    container.innerHTML = '';
+    timerCard.style.display = 'none';
+    effSummary.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  timerCard.style.display = 'block';
+  effSummary.style.display = 'grid';
+  document.getElementById('timer-btn').style.display = 'block';
+  document.getElementById('timer-stop-btn').style.display = 'none';
+  document.getElementById('timer-display').style.display = 'none';
+  document.getElementById('current-step').style.display = 'none';
+
+  document.getElementById('cooking-title').textContent = title;
+
+  // 全ステップを収集（自動下ごしらえ + レシピ本体）
+  const steps = [];
+  recipes.forEach((recipe, rIdx) => {
+    // 自動下ごしらえステップを生成
+    const preSteps = generatePreSteps(recipe);
+    preSteps.forEach((ps, psIdx) => {
+      const s = {
+        recipeIdx: rIdx,
+        recipeName: recipe.title,
+        stepIdx: psIdx,
+        text: ps.text,
+        duration: ps.duration,
+        resource: ps.resource,
+        startTime: 0,
+        passive: false,
+        isPreStep: true,
+        prepTag: ps.tag
+      };
+      s.passive = isPassiveStep(s);
+      // 長時間放置系はパッシブ扱い
+      if (ps.duration >= 5 && ['🧊 解凍','🍚 浸水','💧 水戻し','🧱 水切り','💧 アク抜き','🐟 下処理','🥚 常温戻し'].includes(ps.tag)) {
+        s.passive = true;
+      }
+      steps.push(s);
+    });
+
+    // レシピ本体のステップ
+    const recipeSteps = recipe.steps || [];
+    const defaultDur = Math.ceil((recipe.cookTime||30) / Math.max(recipeSteps.length, 1));
+    recipeSteps.forEach((step, sIdx) => {
+      const isObj = typeof step === 'object' && step !== null;
+      const s = {
+        recipeIdx: rIdx,
+        recipeName: recipe.title,
+        stepIdx: preSteps.length + sIdx,
+        text: isObj ? step.text : step,
+        duration: isObj && step.duration ? step.duration : defaultDur,
+        resource: isObj && step.resource ? step.resource : guessResource(isObj ? step.text : step, sIdx, recipeSteps.length),
+        startTime: 0,
+        passive: false
+      };
+      s.passive = isPassiveStep(s);
+      steps.push(s);
+    });
+  });
+
+  // V3 スケジューリング
+  cookingTimeline = scheduleStepsV3(steps, recipes);
+
+  computeEfficiency(recipes);
+  renderTimeline();
+}
+
+function guessResource(text, stepIdx, total) {
+  // テキストから推測
+  if (typeof text === 'string') {
+    if (text.includes('炊飯')) return '炊飯器';
+    if (text.includes('オーブン') || text.includes('グラタン')) return 'オーブン';
+    if (text.includes('レンジ')) return '電子レンジ';
+    if (text.includes('グリル')) return 'グリル';
+  }
+  if (total === 0) return '手作業';
+  const ratio = stepIdx / total;
+  if (ratio < 0.3) return '手作業';
+  if (ratio < 0.8) return 'コンロ1';
+  return '手作業';
+}
+
+// ============================
+// スケジューラ V3 — 「人」+「設備」の2軸制約モデル
+//
+// 制約ルール:
+// 1. レシピ内ステップは順序通り
+// 2. 「料理人」は1人 → アクティブステップは同時に1つだけ
+// 3. 各設備は同時に1つだけ使用可能
+// 4. パッシブステップは設備のみ占有し、料理人を解放する
+//    → 煮込み中に別レシピの野菜を切れる
+// 5. 優先度: パッシブの長いステップを早く着火（クリティカルパス最適化）
+// ============================
+function scheduleStepsV3(steps, recipes) {
+  // 料理人の空き時刻
+  let cookFreeAt = 0;
+  // 各設備の空き時刻
+  const equipFreeAt = {};
+  // 各レシピの最後のステップ完了時刻（前ステップ依存）
+  const recipePrevEnd = {};
+
+  steps.forEach(s => {
+    if (s.resource !== '手作業' && !equipFreeAt[s.resource]) equipFreeAt[s.resource] = 0;
+    if (recipePrevEnd[s.recipeIdx] === undefined) recipePrevEnd[s.recipeIdx] = 0;
+  });
+
+  // レシピごとにステップをグループ化
+  const byRecipe = {};
+  steps.forEach(s => {
+    if (!byRecipe[s.recipeIdx]) byRecipe[s.recipeIdx] = [];
+    byRecipe[s.recipeIdx].push(s);
+  });
+
+  const pointers = {};
+  Object.keys(byRecipe).forEach(k => pointers[k] = 0);
+
+  const scheduled = [];
+  let safety = 0;
+
+  while (safety++ < 3000) {
+    // 全レシピの「次のステップ」を評価
+    let candidates = [];
+
+    Object.keys(byRecipe).forEach(rIdx => {
+      const ptr = pointers[rIdx];
+      if (ptr >= byRecipe[rIdx].length) return;
+      const step = byRecipe[rIdx][ptr];
+
+      // この step の最早開始時刻を計算
+      const afterPrev = recipePrevEnd[rIdx] || 0; // 前ステップ完了後
+
+      let earliest;
+      if (step.resource === '手作業') {
+        // 手作業: 料理人が空いている + 前ステップ完了後
+        earliest = Math.max(cookFreeAt, afterPrev);
+      } else if (step.passive) {
+        // パッシブ（煮込み等）: 設備が空き + 前ステップ完了後
+        // 料理人は「着火/セット」に1分だけ必要と仮定（cookFreeAtも考慮）
+        const equipReady = equipFreeAt[step.resource] || 0;
+        earliest = Math.max(cookFreeAt, equipReady, afterPrev);
+      } else {
+        // アクティブ（炒める等）: 料理人 + 設備の両方が必要
+        const equipReady = equipFreeAt[step.resource] || 0;
+        earliest = Math.max(cookFreeAt, equipReady, afterPrev);
+      }
+
+      // 優先度スコア（低い方が優先）
+      // 戦略: パッシブで長いステップを優先着火 → 煮込み中に他の準備を進められる
+      let priority = earliest * 10000;
+      if (step.passive && step.duration >= 10) priority -= step.duration * 100; // 長パッシブ優先
+      if (step.passive) priority -= 50; // パッシブ全般を優先
+      if (!step.passive && step.resource !== '手作業') priority += 10; // アクティブ調理はやや後回し
+
+      candidates.push({ step, rIdx, earliest, priority });
+    });
+
+    if (candidates.length === 0) break;
+
+    // 最も優先度が高い（=低スコア）ものを選択
+    candidates.sort((a, b) => a.priority - b.priority || a.earliest - b.earliest);
+    const best = candidates[0];
+    const step = best.step;
+
+    step.startTime = best.earliest;
+    const endTime = best.earliest + step.duration;
+
+    // リソース更新
+    if (step.resource === '手作業' && step.passive) {
+      // パッシブ手作業（解凍、浸水、水切り等）: セットするだけで料理人は1分で解放
+      cookFreeAt = Math.max(cookFreeAt, best.earliest + 1);
+    } else if (step.resource === '手作業') {
+      // 通常手作業: 料理人を占有
+      cookFreeAt = endTime;
+    } else if (step.passive) {
+      // パッシブ: 設備を占有、料理人は「着火/セット」で1分だけ拘束
+      equipFreeAt[step.resource] = endTime;
+      cookFreeAt = Math.max(cookFreeAt, best.earliest + 1); // 着火に1分
+    } else {
+      // アクティブ調理: 料理人 + 設備の両方を占有
+      cookFreeAt = endTime;
+      equipFreeAt[step.resource] = endTime;
+    }
+
+    // レシピの前ステップ完了時刻を更新
+    recipePrevEnd[best.rIdx] = endTime;
+
+    scheduled.push(step);
+    pointers[best.rIdx]++;
+  }
+
+  return scheduled;
+}
+
+// ============================
+// 効率メトリクス
+// ============================
+function computeEfficiency(recipes) {
+  if (!cookingTimeline || cookingTimeline.length === 0) return;
+
+  const maxTime = Math.max(...cookingTimeline.map(s => s.startTime + s.duration));
+  // 順番に作った場合 = レシピ本体 + 下ごしらえ（放置系は最長のみカウント）
+  const baseCookTime = recipes.reduce((sum, r) => sum + (r.cookTime || 0), 0);
+  const prepStepsAll = cookingTimeline.filter(s => s.isPreStep);
+  const prepActiveTime = prepStepsAll.filter(s => !s.passive).reduce((sum, s) => sum + s.duration, 0);
+  const prepPassiveMax = prepStepsAll.filter(s => s.passive).reduce((mx, s) => Math.max(mx, s.duration), 0);
+  const sequentialTime = baseCookTime + prepActiveTime + prepPassiveMax;
+  const savedTime = sequentialTime - maxTime;
+  const savedPct = sequentialTime > 0 ? Math.round((savedTime / sequentialTime) * 100) : 0;
+
+  // 料理人の稼働率を計算（実際に料理人が手を動かしている時間をタイムライン上で計測）
+  const cookBusySteps = cookingTimeline.filter(s => {
+    if (s.resource === '手作業' && s.passive) return false; // 解凍等はセットのみ
+    if (s.resource === '手作業') return true;
+    if (!s.passive) return true; // アクティブ調理
+    return false;
+  });
+  // 重複を排除して実稼働時間を計算
+  const cookIntervals = cookBusySteps.map(s => [s.startTime, s.startTime + s.duration]).sort((a,b) => a[0]-b[0]);
+  let activeTime = 0;
+  let mergedEnd = 0;
+  cookIntervals.forEach(([s, e]) => {
+    if (s >= mergedEnd) { activeTime += (e - s); mergedEnd = e; }
+    else if (e > mergedEnd) { activeTime += (e - mergedEnd); mergedEnd = e; }
+  });
+  const cookUtilPct = maxTime > 0 ? Math.round((activeTime / maxTime) * 100) : 0;
+
+  // パッシブ時間（放置で稼いだ時間）
+  const passiveSteps = cookingTimeline.filter(s => s.passive && s.resource !== '手作業');
+  const passiveTime = passiveSteps.reduce((sum, s) => sum + s.duration, 0);
+
+  // 下ごしらえステップ
+  const prepSteps = cookingTimeline.filter(s => s.isPreStep);
+  const prepTime = prepSteps.reduce((sum, s) => sum + s.duration, 0);
+
+  const usedResources = [...new Set(cookingTimeline.map(s => s.resource))];
+
+  const el = document.getElementById('efficiency-summary');
+  el.innerHTML = `
+    <div class="efficiency-stat">
+      <div class="stat-label">並行調理時間</div>
+      <div class="stat-value">${maxTime}分</div>
+    </div>
+    <div class="efficiency-stat">
+      <div class="stat-label">順番に作った場合</div>
+      <div class="stat-value">${sequentialTime}分</div>
+    </div>
+    <div class="efficiency-stat">
+      <div class="stat-label">時短効果</div>
+      <div class="stat-value" style="color:var(--success)">${savedTime > 0 ? '-'+savedTime+'分' : '0分'}</div>
+      <div class="stat-sub">${savedPct > 0 ? savedPct+'%短縮' : ''}</div>
+    </div>
+    <div class="efficiency-stat">
+      <div class="stat-label">料理人の稼働率</div>
+      <div class="stat-value">${cookUtilPct}%</div>
+      <div class="stat-sub">手が空く: ${maxTime - activeTime}分</div>
+    </div>
+    <div class="efficiency-stat">
+      <div class="stat-label">放置調理</div>
+      <div class="stat-value">${passiveTime}分</div>
+      <div class="stat-sub">${passiveSteps.length}ステップ</div>
+    </div>
+    <div class="efficiency-stat">
+      <div class="stat-label">下ごしらえ</div>
+      <div class="stat-value">${prepSteps.length > 0 ? prepTime+'分' : 'なし'}</div>
+      <div class="stat-sub">${prepSteps.length > 0 ? prepSteps.map(s=>s.prepTag||'').filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' ') : '自動検出0件'}</div>
+    </div>
+    <div class="efficiency-stat">
+      <div class="stat-label">使用設備</div>
+      <div class="stat-value" style="font-size:.85rem">${usedResources.length}種</div>
+      <div class="stat-sub">${usedResources.join('・')}</div>
+    </div>
+  `;
+}
+
+// ============================
+// タイムライン描画
+// ============================
+const RECIPE_COLORS = [
+  '#4a7c59','#d4783c','#c0392b','#8e44ad','#2980b9',
+  '#16a085','#d4a017','#7f3c8d','#3c6478','#e67e22'
+];
+
+function renderTimeline() {
+  if (!cookingTimeline || cookingTimeline.length === 0) return;
+  if (currentTimelineView === 'list') renderStepList();
+  else renderGantt();
+}
+
+function toggleTimelineView(view, btn) {
+  currentTimelineView = view;
+  document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (cookingTimeline) renderTimeline();
+}
+
+function renderGantt() {
+  const tl = cookingTimeline;
+  const container = document.getElementById('timeline-container');
+  const maxTime = Math.max(...tl.map(s => s.startTime + s.duration));
+  const recipes = [...new Set(tl.map(s => s.recipeName))];
+
+  // 料理人の行を構築（アクティブなステップのみ — パッシブ手作業は含めない）
+  const cookSteps = tl.filter(s => {
+    if (s.resource === '手作業' && s.passive) return false; // 解凍・浸水等は料理人不要
+    if (s.resource === '手作業') return true;
+    if (!s.passive) return true; // アクティブ調理はコンロ使うが料理人も拘束
+    return false;
+  });
+
+  // 設備の行を構築
+  const equipResources = [...new Set(tl.filter(s => s.resource !== '手作業').map(s => s.resource))].sort((a,b) => {
+    const ai = RESOURCE_ORDER.indexOf(a), bi = RESOURCE_ORDER.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+
+  const interval = maxTime <= 15 ? 1 : maxTime <= 30 ? 5 : maxTime <= 60 ? 10 : 15;
+  let timeMarks = '';
+  for (let t = 0; t <= maxTime; t += interval)
+    timeMarks += `<span class="gantt-time-mark" style="left:${(t/maxTime)*100}%">${t}分</span>`;
+
+  let legend = recipes.map((n,i) =>
+    `<span class="gantt-legend-item"><span class="gantt-legend-color" style="background:${RECIPE_COLORS[i%RECIPE_COLORS.length]}"></span>${n}</span>`
+  ).join('');
+  legend += `<span class="gantt-legend-item"><span class="gantt-legend-color" style="background:repeating-linear-gradient(45deg,rgba(0,0,0,.08),rgba(0,0,0,.08) 3px,transparent 3px,transparent 6px)"></span>放置</span>`;
+
+  let gridLines = '';
+  for (let t = interval; t < maxTime; t += interval)
+    gridLines += `<div style="position:absolute;left:${(t/maxTime)*100}%;top:0;bottom:0;width:1px;background:rgba(0,0,0,.06);z-index:0"></div>`;
+
+  // 料理人の行
+  function buildRow(label, rowSteps) {
+    const sorted = [...rowSteps].sort((a,b) => a.startTime - b.startTime);
+    let allBlocks = [];
+    sorted.forEach((s, idx) => {
+      const prevEnd = idx > 0 ? sorted[idx-1].startTime + sorted[idx-1].duration : 0;
+      if (s.startTime > prevEnd + 1) {
+        allBlocks.push({startTime:prevEnd, duration:s.startTime-prevEnd, recipeName:'', text:'（手が空く）', isIdle:true});
+      }
+      allBlocks.push(s);
+    });
+
+    const blocks = allBlocks.map(s => {
+      const left = (s.startTime / maxTime) * 100;
+      const width = Math.max((s.duration / maxTime) * 100, 1.5);
+      if (s.isIdle) {
+        return `<div class="gantt-block idle" style="left:${left}%;width:${width}%"
+          title="手が空く ${s.startTime}〜${s.startTime+s.duration}分"><span class="gantt-block-title">🆓 空き</span></div>`;
+      }
+      const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
+      const prepLabel = s.isPreStep ? `${s.prepTag||'下ごしらえ'} ` : '';
+      const prepBorder = s.isPreStep ? 'border:2px dashed rgba(255,255,255,.5);' : '';
+      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${prepBorder}"
+        title="${s.recipeName}\n${prepLabel}${s.text}\n${s.startTime}分〜${s.startTime+s.duration}分（${s.duration}分間）\n${s.isPreStep?'⚡ 自動追加された下ごしらえ\n':''}${s.passive?'放置OK — 他の作業ができます':'手を使います'}">
+        <span class="gantt-block-title">${prepLabel}${s.recipeName}</span>
+        <span class="gantt-block-desc">${s.text}</span>
+        <span class="gantt-block-time">${s.startTime}〜${s.startTime+s.duration}分</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="gantt-row"><div class="gantt-label">${label}</div><div class="gantt-track">${blocks}</div></div>`;
+  }
+
+  // 設備の行（パッシブは半透明で表示）
+  function buildEquipRow(resource) {
+    const rSteps = tl.filter(s => s.resource === resource);
+    const sorted = [...rSteps].sort((a,b) => a.startTime - b.startTime);
+
+    const blocks = sorted.map(s => {
+      const left = (s.startTime / maxTime) * 100;
+      const width = Math.max((s.duration / maxTime) * 100, 1.5);
+      const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
+      const passiveStyle = s.passive ? 'opacity:.55;' : '';
+      const passiveIcon = s.passive ? '🔥 ' : '👩‍🍳 ';
+      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${passiveStyle}"
+        title="${s.recipeName}\n${passiveIcon}${s.text}\n${s.startTime}分〜${s.startTime+s.duration}分（${s.duration}分間）\n${s.passive?'⏳ 放置OK — 料理人フリー':'🖐 手を使って調理中'}">
+        <span class="gantt-block-title">${s.passive?'🔥':'👩‍🍳'} ${s.recipeName}</span>
+        <span class="gantt-block-desc">${s.text}</span>
+        <span class="gantt-block-time">${s.startTime}〜${s.startTime+s.duration}分</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="gantt-row"><div class="gantt-label">${resource}</div><div class="gantt-track">${blocks}</div></div>`;
+  }
+
+  const cookRow = buildRow('👩‍🍳 料理人', cookSteps);
+  const equipRows = equipResources.map(r => buildEquipRow(r)).join('');
+
+  // パッシブ手作業（解凍・浸水等）の行
+  const passiveHandSteps = tl.filter(s => s.resource === '手作業' && s.passive);
+  const passiveHandRow = passiveHandSteps.length > 0 ? (() => {
+    const sorted = [...passiveHandSteps].sort((a,b) => a.startTime - b.startTime);
+    const blocks = sorted.map(s => {
+      const left = (s.startTime / maxTime) * 100;
+      const width = Math.max((s.duration / maxTime) * 100, 1.5);
+      const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
+      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};opacity:.55;border:2px dashed rgba(255,255,255,.5)"
+        title="${s.recipeName}\n${s.prepTag||''} ${s.text}\n${s.startTime}分〜${s.startTime+s.duration}分（${s.duration}分間）\n⏳ 放置OK — セットするだけ">
+        <span class="gantt-block-title">${s.prepTag||'⏳'} ${s.recipeName}</span>
+        <span class="gantt-block-desc">${s.text}</span>
+        <span class="gantt-block-time">${s.startTime}〜${s.startTime+s.duration}分</span>
+      </div>`;
+    }).join('');
+    return `<div class="gantt-row"><div class="gantt-label">⏳ 放置</div><div class="gantt-track">${blocks}</div></div>`;
+  })() : '';
+
+  container.innerHTML = `<div class="gantt-wrapper">
+    <div class="gantt-header"><span class="gantt-total">並行調理: 約${maxTime}分</span><div class="gantt-legend">${legend}</div></div>
+    <div class="gantt-time-axis" style="margin-left:90px;position:relative;height:20px">${timeMarks}</div>
+    <div style="position:relative">
+      <div style="position:absolute;left:90px;right:0;top:0;bottom:0;pointer-events:none">${gridLines}</div>
+      ${cookRow}
+      ${equipRows}
+      ${passiveHandRow}
+    </div>
+  </div>`;
+}
+
+function renderStepList() {
+  const tl = cookingTimeline;
+  const container = document.getElementById('timeline-container');
+  const sorted = [...tl].sort((a,b) => a.startTime - b.startTime || a.resource.localeCompare(b.resource));
+  const recipes = [...new Set(tl.map(s => s.recipeName))];
+  const maxTime = Math.max(...tl.map(s => s.startTime + s.duration));
+
+  const cards = sorted.map(s => {
+    const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
+    const isParallel = tl.some(o => o !== s && o.startTime < s.startTime + s.duration && o.startTime + o.duration > s.startTime);
+    const passiveTag = s.passive ? '<span class="step-parallel-tag" style="background:rgba(41,128,185,.15);color:#2980b9">⏳ 放置OK</span>' : '<span class="step-parallel-tag" style="background:rgba(192,57,43,.1);color:#c0392b">🖐 手を使う</span>';
+    const prepTag = s.isPreStep ? `<span class="step-parallel-tag" style="background:rgba(232,168,56,.15);color:#b8860b">${s.prepTag || '🔧 下ごしらえ'}</span>` : '';
+    return `<div class="step-card ${isParallel?'parallel-indicator':''}" style="border-left-color:${color}">
+      <div class="step-time-badge" style="background:${color}">
+        <span class="t-start">${s.startTime}分</span>
+        <span class="t-dur">${s.duration}分間</span>
+      </div>
+      <div class="step-body">
+        <div class="step-recipe-name" style="color:${color}">${s.recipeName}</div>
+        <div class="step-text">${s.text}</div>
+        <span class="step-resource-tag">${s.resource}</span>
+        ${prepTag}
+        ${passiveTag}
+        ${isParallel ? '<span class="step-parallel-tag">⚡ 並行</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `<div class="step-list-title">調理手順（時系列）— 合計 約${maxTime}分</div>
+    <div>${cards}</div>`;
+}
+
+// ============================
+// 調理タイマー
+// ============================
+function startCookingTimer() {
+  if (!cookingTimeline || cookingTimeline.length === 0) return;
+  timerSeconds = 0;
+  document.getElementById('timer-btn').style.display = 'none';
+  document.getElementById('timer-stop-btn').style.display = 'block';
+  document.getElementById('timer-display').style.display = 'block';
+  document.getElementById('current-step').style.display = 'block';
+
+  const maxTime = Math.max(...cookingTimeline.map(s => s.startTime + s.duration)) * 60;
+
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    const m = Math.floor(timerSeconds/60), s = timerSeconds%60;
+    document.getElementById('timer-display').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+    const current = cookingTimeline.filter(st => {
+      const start = st.startTime*60, end = (st.startTime+st.duration)*60;
+      return timerSeconds >= start && timerSeconds < end;
+    });
+
+    // 次のステップ
+    const upcoming = cookingTimeline.filter(st => st.startTime*60 > timerSeconds).sort((a,b) => a.startTime - b.startTime);
+    const next = upcoming.length > 0 ? upcoming[0] : null;
+
+    const stepEl = document.getElementById('current-step');
+    if (current.length > 0) {
+      stepEl.innerHTML = `<strong style="color:var(--primary)">🔥 今のステップ:</strong><br>
+        ${current.map(s => `<span style="font-size:.88rem">【${s.resource}】${s.recipeName}: ${s.text}</span>`).join('<br>')}
+        ${next ? `<br><br><span style="font-size:.78rem;color:var(--text-light)">⏭ 次: ${next.recipeName} — ${next.text}（${next.startTime}分〜）</span>` : ''}`;
+    } else if (timerSeconds >= maxTime) {
+      clearInterval(timerInterval);
+      stepEl.innerHTML = '<strong style="color:var(--success)">✓ すべての調理が完了しました！</strong>';
+      document.getElementById('timer-stop-btn').style.display = 'none';
+    } else {
+      stepEl.innerHTML = `<span style="color:var(--text-light)">待機中...${next ? `<br>⏭ 次: ${next.recipeName} — ${next.text}（${next.startTime}分〜）` : ''}</span>`;
+    }
+  }, 1000);
+}
+
+function stopCookingTimer() {
+  clearInterval(timerInterval);
+  document.getElementById('timer-btn').style.display = 'block';
+  document.getElementById('timer-stop-btn').style.display = 'none';
+  document.getElementById('timer-display').style.display = 'none';
+  document.getElementById('current-step').style.display = 'none';
+}
+
+// ============================
+// 買い物リスト
+// ============================
+function generateShoppingFromWeek() {
+  const ingredientMap = {};
+  for (let i = 0; i < 7; i++) {
+    SLOTS.forEach(slot => {
+      (weekPlan[i][slot]||[]).forEach(item => {
+        const recipe = getRecipeById(item.id);
+        if (!recipe) return;
+        (recipe.ingredients||[]).forEach(ing => {
+          const raw = typeof ing === 'string' ? ing : `${ing.name}/${ing.qty}`;
+          const parts = raw.split('/');
+          const name = parts[0].trim();
+          const qty = parts[1]?.trim() || '';
+          const key = name;
+          if (!ingredientMap[key]) ingredientMap[key] = {name, qtys:[], sources:new Set()};
+          if (qty) ingredientMap[key].qtys.push(qty);
+          ingredientMap[key].sources.add(recipe.title);
+        });
+      });
+    });
+  }
+
+  shoppingList = Object.values(ingredientMap).map(item => ({
+    name: item.name,
+    qty: item.qtys.join(', '),
+    source: [...item.sources].join('・'),
+    checked: false
+  }));
+  saveState(); updateShoppingDisplay();
+  switchTab('shopping', document.querySelectorAll('.tab-btn')[3]);
+  showToast(`${shoppingList.length}件の材料を買い物リストに追加しました`);
+}
+
+function addShoppingItem() {
+  const name = document.getElementById('new-item-name').value.trim();
+  if (!name) return;
+  const qty = document.getElementById('new-item-qty').value.trim();
+  shoppingList.push({name, qty, source:'手動追加', checked:false});
+  document.getElementById('new-item-name').value = '';
+  document.getElementById('new-item-qty').value = '';
+  saveState(); updateShoppingDisplay();
+}
+
+function toggleShoppingItem(idx) {
+  shoppingList[idx].checked = !shoppingList[idx].checked;
+  saveState(); updateShoppingDisplay();
+}
+
+function removeShoppingItem(idx) {
+  shoppingList.splice(idx, 1);
+  saveState(); updateShoppingDisplay();
+}
+
+function clearCheckedShopping() {
+  shoppingList = shoppingList.filter(i => !i.checked);
+  saveState(); updateShoppingDisplay();
+}
+function clearAllShopping() {
+  if (!confirm('買い物リストをすべて削除しますか？')) return;
+  shoppingList = [];
+  saveState(); updateShoppingDisplay();
+}
+function resetShoppingChecks() {
+  shoppingList.forEach(i => i.checked = false);
+  saveState(); updateShoppingDisplay();
+}
+
+function updateShoppingDisplay() {
+  const list = document.getElementById('shopping-list');
+  const empty = document.getElementById('shopping-empty');
+  const stats = document.getElementById('shopping-stats');
+
+  if (shoppingList.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    stats.textContent = '';
+    return;
+  }
+  empty.style.display = 'none';
+  const checked = shoppingList.filter(i => i.checked).length;
+  stats.textContent = `${shoppingList.length}件中 ${checked}件チェック済み`;
+
+  const sorted = [...shoppingList.entries()].sort((a,b) => a[1].checked - b[1].checked);
+
+  list.innerHTML = sorted.map(([idx, item]) => `
+    <div class="shopping-item ${item.checked?'checked':''}">
+      <input type="checkbox" ${item.checked?'checked':''} onchange="toggleShoppingItem(${idx})">
+      <div class="shopping-item-content">
+        <div class="shopping-item-name">${item.name}</div>
+        ${item.qty ? `<div class="shopping-item-qty">${item.qty}</div>` : ''}
+        ${item.source ? `<div class="shopping-item-source">${item.source}</div>` : ''}
+      </div>
+      <button class="remove-btn" onclick="removeShoppingItem(${idx})">✕</button>
+    </div>`).join('');
+}
+
+// ============================
+// 栄養バランス
+// ============================
+function updateNutrition() {
+  const scope = document.getElementById('nutrition-scope')?.value || 'week';
+  let recipes = [];
+
+  if (scope === 'week') {
+    for (let i = 0; i < 7; i++) {
+      SLOTS.forEach(slot => {
+        (weekPlan[i][slot]||[]).forEach(item => {
+          const r = getRecipeById(item.id);
+          if (r) recipes.push(r);
+        });
+      });
+    }
+  } else {
+    const dayIdx = parseInt(scope);
+    SLOTS.forEach(slot => {
+      (weekPlan[dayIdx][slot]||[]).forEach(item => {
+        const r = getRecipeById(item.id);
+        if (r) recipes.push(r);
+      });
+    });
+  }
+
+  const totals = {protein:0, vegetable:0, carb:0, other:0};
+  recipes.forEach(r => {
+    const n = r.nutrition || guessNutrition(r);
+    totals.protein += n.protein || 0;
+    totals.vegetable += n.vegetable || 0;
+    totals.carb += n.carb || 0;
+    totals.other += n.other || 0;
+  });
+
+  const labels = {protein:'タンパク質', vegetable:'野菜・食物繊維', carb:'炭水化物', other:'その他（乳製品等）'};
+  const colors = {protein:'#e74c3c', vegetable:'#27ae60', carb:'#f39c12', other:'#3498db'};
+  const maxVal = scope === 'week' ? 28 : 4;
+  const idealMin = scope === 'week' ? 10 : 1.5;
+
+  const alertsEl = document.getElementById('nutrition-alerts');
+  let alerts = '';
+  if (recipes.length === 0) {
+    alerts = '<div class="nutrition-alert warn">献立にレシピを追加すると栄養バランスが表示されます</div>';
+  } else {
+    Object.keys(totals).forEach(key => {
+      if (totals[key] < idealMin) alerts += `<div class="nutrition-alert warn">${labels[key]}が少なめです</div>`;
+    });
+    if (!alerts) alerts = '<div class="nutrition-alert good">バランスが良好です</div>';
+  }
+  alertsEl.innerHTML = alerts;
+
+  const summaryEl = document.getElementById('nutrition-summary');
+  summaryEl.innerHTML = Object.keys(totals).map(key => {
+    const pct = Math.min((totals[key] / maxVal) * 100, 100);
+    return `<div class="nutrition-card">
+      <div class="label">${labels[key]}</div>
+      <div class="value" style="color:${colors[key]}">${totals[key]}</div>
+      <div class="bar"><div class="bar-fill" style="width:${pct}%;background:${colors[key]}"></div></div>
+    </div>`;
+  }).join('');
+
+  drawRadarChart(totals, maxVal, labels, colors);
+}
+
+function guessNutrition(recipe) {
+  const cat = normalizeCategory(recipe.category);
+  if (cat === '主菜') return {protein:3,vegetable:1,carb:0,other:0};
+  if (cat === '副菜' || cat === 'サラダ') return {protein:0,vegetable:3,carb:0,other:0};
+  if (cat === '汁物') return {protein:1,vegetable:2,carb:0,other:0};
+  if (cat === '主食' || cat === 'ごはん・麺') return {protein:1,vegetable:0,carb:4,other:0};
+  return {protein:1,vegetable:1,carb:1,other:0};
+}
+
+function drawRadarChart(totals, maxVal, labels, colors) {
+  const canvas = document.getElementById('nutrition-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, radius = Math.min(W,H)/2 - 40;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const keys = Object.keys(totals);
+  const n = keys.length;
+  const angleStep = (Math.PI * 2) / n;
+
+  [0.25,0.5,0.75,1].forEach(scale => {
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const angle = -Math.PI/2 + i * angleStep;
+      const x = cx + Math.cos(angle) * radius * scale;
+      const y = cy + Math.sin(angle) * radius * scale;
+      i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = 'rgba(0,0,0,.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  keys.forEach((key, i) => {
+    const angle = -Math.PI/2 + i * angleStep;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y);
+    ctx.strokeStyle = 'rgba(0,0,0,.1)'; ctx.stroke();
+
+    const lx = cx + Math.cos(angle) * (radius + 22);
+    const ly = cy + Math.sin(angle) * (radius + 22);
+    ctx.fillStyle = '#555'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(labels[key], lx, ly);
+  });
+
+  ctx.beginPath();
+  keys.forEach((key, i) => {
+    const val = Math.min(totals[key] / maxVal, 1);
+    const angle = -Math.PI/2 + i * angleStep;
+    const x = cx + Math.cos(angle) * radius * val;
+    const y = cy + Math.sin(angle) * radius * val;
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(74,124,89,.2)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(74,124,89,.8)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  keys.forEach((key, i) => {
+    const val = Math.min(totals[key] / maxVal, 1);
+    const angle = -Math.PI/2 + i * angleStep;
+    const x = cx + Math.cos(angle) * radius * val;
+    const y = cy + Math.sin(angle) * radius * val;
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle = colors[key]; ctx.fill();
+  });
+}
+
+// ============================
+// Notion連携
+// ============================
+async function sendToNotion() {
+  if (!notionSettings.token || !notionSettings.parentPageId) {
+    showToast('設定からNotion連携を設定してください');
+    return;
+  }
+  const unchecked = shoppingList.filter(i => !i.checked);
+  if (unchecked.length === 0) { showToast('送信するアイテムがありません'); return; }
+
+  const today = new Date().toLocaleDateString('ja-JP');
+  const children = unchecked.map(item => ({
+    object:'block', type:'to_do',
+    to_do: {
+      rich_text: [{type:'text',text:{content:`${item.name}${item.qty?' — '+item.qty:''}`}}],
+      checked: false
+    }
+  }));
+
+  try {
+    const res = await fetch('https://api.notion.com/v1/pages', {
+      method:'POST',
+      headers: {
+        'Authorization': 'Bearer ' + notionSettings.token,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28'
+      },
+      body: JSON.stringify({
+        parent: {page_id: notionSettings.parentPageId},
+        properties: {title: {title: [{text:{content:`買い物リスト ${today}`}}]}},
+        children
+      })
+    });
+    if (res.ok) showToast('Notionに送信しました');
+    else showToast('Notion送信エラー: ' + res.status);
+  } catch(e) {
+    showToast('Notion送信エラー: ' + e.message);
+  }
+}
+
+// ============================
+// 設定
+// ============================
+function openSettings() { document.getElementById('settings-modal').classList.add('show'); }
+function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
+</script>
+</body>
+</html>
