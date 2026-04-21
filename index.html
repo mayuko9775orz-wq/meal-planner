@@ -461,6 +461,90 @@
   }
   .week-summary-totals span { white-space:nowrap; }
   .week-summary-totals strong { color:var(--primary); }
+
+  /* ========== NOWモード ========== */
+  .now-container { max-width:540px; margin:0 auto; }
+  .now-progress { display:flex; align-items:center; gap:5px; justify-content:center; flex-wrap:wrap; margin-bottom:6px; }
+  .now-progress .dot {
+    width:10px; height:10px; border-radius:50%; background:var(--border);
+    transition: background var(--transition-speed);
+  }
+  .now-progress .dot.done { background:var(--primary); }
+  .now-progress .dot.current { background:var(--accent); box-shadow:0 0 0 3px rgba(201,169,110,.25); }
+  .now-step-count { text-align:center; font-size:.8rem; color:var(--text-light); margin-bottom:14px; }
+
+  .now-load {
+    text-align:center; font-size:.85rem; padding:6px 14px; border-radius:10px;
+    margin-bottom:14px; font-weight:500;
+  }
+  .now-load.load-low { background:rgba(138,173,122,.12); color:#6b8a5a; }
+  .now-load.load-mid { background:rgba(201,169,110,.14); color:#a08a5a; }
+  .now-load.load-high { background:rgba(196,135,122,.14); color:#c4877a; }
+
+  .now-card {
+    background:var(--card); border:1px solid rgba(0,0,0,.05); border-radius:18px;
+    padding:24px 20px; margin-bottom:14px;
+    box-shadow:0 2px 12px rgba(0,0,0,.04);
+    transition: all var(--transition-speed);
+  }
+  .now-recipe { display:flex; align-items:center; gap:8px; font-size:.85rem; font-weight:500; margin-bottom:10px; }
+  .now-recipe .color-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+  .now-text { font-size:1.15rem; line-height:1.6; font-weight:500; color:var(--text); margin-bottom:14px; }
+  .now-meta { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .now-meta .badge {
+    display:inline-flex; align-items:center; gap:4px; padding:4px 12px;
+    background:var(--bg); border-radius:10px; font-size:.8rem; color:var(--text-light);
+  }
+
+  .now-timer-ring { display:flex; flex-direction:column; align-items:center; margin:0 auto; }
+  .now-timer-ring svg { width:120px; height:120px; }
+  .now-timer-ring .ring-bg { fill:none; stroke:var(--border); stroke-width:6; }
+  .now-timer-ring .ring-fg {
+    fill:none; stroke:var(--primary); stroke-width:6; stroke-linecap:round;
+    transform:rotate(-90deg); transform-origin:center;
+    animation-timing-function:linear; animation-fill-mode:forwards;
+  }
+  @keyframes nowTimer { from { stroke-dashoffset:0; } to { stroke-dashoffset:314; } }
+  .now-timer-label { font-size:1.6rem; font-weight:700; color:var(--primary); margin-top:-76px; margin-bottom:40px; }
+
+  .now-bg-tasks {
+    background:var(--bg); border:1px solid rgba(0,0,0,.04); border-radius:14px;
+    padding:14px 16px; margin-bottom:14px;
+  }
+  .now-bg-tasks .section-title { font-size:.78rem; color:var(--text-light); font-weight:500; margin-bottom:8px; }
+  .now-bg-task-item { font-size:.84rem; color:var(--text); padding:4px 0; display:flex; justify-content:space-between; }
+  .now-bg-task-item .remaining { color:var(--text-light); font-size:.78rem; }
+
+  .now-transition {
+    background:rgba(201,169,110,.08); border:1px solid rgba(201,169,110,.15); border-radius:14px;
+    padding:14px 16px; margin-bottom:14px;
+  }
+  .now-transition .section-title { font-size:.78rem; color:var(--accent); font-weight:500; margin-bottom:8px; }
+  .now-transition .transition-line { font-size:.84rem; color:var(--text); padding:2px 0; }
+
+  .now-nav { display:flex; gap:10px; justify-content:center; }
+  .now-nav button {
+    padding:10px 24px; border:1px solid var(--border); border-radius:12px;
+    background:var(--card); font-size:.88rem; cursor:pointer;
+    transition:all var(--transition-speed); color:var(--text);
+  }
+  .now-nav button.primary-nav {
+    background:var(--primary); color:white; border-color:var(--primary); font-weight:600;
+  }
+  .now-nav button:disabled { opacity:.4; cursor:default; }
+  .now-complete-msg {
+    text-align:center; padding:40px 20px; color:var(--success); font-size:1.1rem; font-weight:600;
+  }
+
+  [data-theme="dark"] .now-card { background:var(--card); border-color:var(--border); box-shadow:0 2px 12px rgba(0,0,0,.15); }
+  [data-theme="dark"] .now-bg-tasks { background:rgba(255,255,255,.03); border-color:var(--border); }
+  [data-theme="dark"] .now-transition { background:rgba(201,169,110,.06); border-color:rgba(201,169,110,.12); }
+  [data-theme="dark"] .now-meta .badge { background:rgba(255,255,255,.06); }
+  [data-theme="dark"] .now-load.load-low { background:rgba(138,173,122,.1); color:#8aad7a; }
+  [data-theme="dark"] .now-load.load-mid { background:rgba(201,169,110,.1); color:#ddc08a; }
+  [data-theme="dark"] .now-load.load-high { background:rgba(196,135,122,.1); color:#c4877a; }
+  [data-theme="dark"] .now-nav button { background:var(--card); color:var(--text); border-color:var(--border); }
+  [data-theme="dark"] .now-nav button.primary-nav { background:var(--primary); color:white; border-color:var(--primary); }
 </style>
 </head>
 <body>
@@ -585,6 +669,7 @@
     <div class="view-toggle-btns">
       <button class="view-toggle-btn active" onclick="toggleTimelineView('gantt',this)">ガントチャート</button>
       <button class="view-toggle-btn" onclick="toggleTimelineView('list',this)">ステップリスト</button>
+      <button class="view-toggle-btn" onclick="toggleTimelineView('now',this)">▶ NOWモード</button>
     </div>
     <div id="timeline-container" class="timeline-container"></div>
     <div id="timeline-empty" class="empty-state">
@@ -739,6 +824,7 @@ let shoppingList = [];
 let selectedCookingDay = -1;
 let cookingTimeline = null;
 let currentTimelineView = 'gantt';
+let nowStepIndex = 0;
 let timerInterval = null;
 let timerSeconds = 0;
 let notionSettings = {token:'',parentPageId:''};
@@ -2101,6 +2187,7 @@ function generateTimelineFromRecipes(recipes, title) {
 
   // V3 スケジューリング
   cookingTimeline = scheduleStepsV3(steps, recipes);
+  nowStepIndex = 0;
 
   computeEfficiency(recipes);
   renderTimeline();
@@ -2324,6 +2411,7 @@ const RECIPE_COLORS = [
 function renderTimeline() {
   if (!cookingTimeline || cookingTimeline.length === 0) return;
   if (currentTimelineView === 'list') renderStepList();
+  else if (currentTimelineView === 'now') renderNowMode();
   else renderGantt();
 }
 
@@ -2486,6 +2574,153 @@ function renderStepList() {
 
   container.innerHTML = `<div class="step-list-title">調理手順（時系列）— 合計 約${maxTime}分</div>
     <div>${cards}</div>`;
+}
+
+// ============================
+// NOWモード（ガイド付き調理）
+// ============================
+function getNowActiveSteps() {
+  if (!cookingTimeline) return []
+  const sorted = [...cookingTimeline].sort((a,b) => a.startTime - b.startTime || a.resource.localeCompare(b.resource))
+  return sorted.filter(s => !s.passive)
+}
+
+function renderNowMode() {
+  const container = document.getElementById('timeline-container')
+  const tl = cookingTimeline
+  if (!tl || tl.length === 0) return
+
+  const activeSteps = getNowActiveSteps()
+  const allSorted = [...tl].sort((a,b) => a.startTime - b.startTime)
+  const recipes = [...new Set(tl.map(s => s.recipeName))]
+
+  if (activeSteps.length === 0) {
+    container.innerHTML = '<div class="now-container"><div class="now-complete-msg">手動ステップがありません</div></div>'
+    return
+  }
+
+  // Clamp index
+  if (nowStepIndex < 0) nowStepIndex = 0
+  if (nowStepIndex >= activeSteps.length) {
+    container.innerHTML = `<div class="now-container">
+      <div class="now-progress">${activeSteps.map(() => '<div class="dot done"></div>').join('')}</div>
+      <div class="now-complete-msg">🎉 すべてのステップが完了しました！</div>
+      <div class="now-nav"><button onclick="nowPrev()">← 前へ</button></div>
+    </div>`
+    return
+  }
+
+  const step = activeSteps[nowStepIndex]
+  const color = RECIPE_COLORS[recipes.indexOf(step.recipeName) % RECIPE_COLORS.length]
+
+  // Progress dots
+  const dots = activeSteps.map((_, i) => {
+    const cls = i < nowStepIndex ? 'dot done' : i === nowStepIndex ? 'dot current' : 'dot'
+    return `<div class="${cls}"></div>`
+  }).join('')
+
+  // Cognitive load: count all overlapping steps at current step's time window
+  const stepStart = step.startTime
+  const stepEnd = step.startTime + step.duration
+  const overlapping = allSorted.filter(s => s.startTime < stepEnd && s.startTime + s.duration > stepStart)
+  const activeOverlap = overlapping.filter(s => !s.passive).length
+  let loadClass, loadLabel
+  if (activeOverlap <= 1) { loadClass = 'load-low'; loadLabel = '🟢 余裕' }
+  else if (activeOverlap === 2) { loadClass = 'load-mid'; loadLabel = '🟡 やや忙しい' }
+  else { loadClass = 'load-high'; loadLabel = '🔴 集中！' }
+
+  // Visual timer SVG (circumference = 2 * PI * 50 ≈ 314)
+  const circumference = 314
+  const durationSec = step.duration * 60
+  const minutes = Math.floor(step.duration)
+  const timerDisplay = `${minutes}:00`
+
+  // Background tasks: passive steps running at this step's start time
+  const bgTasks = allSorted.filter(s =>
+    s.passive && s.startTime < stepEnd && s.startTime + s.duration > stepStart
+  )
+  let bgHtml = ''
+  if (bgTasks.length > 0) {
+    const items = bgTasks.map(s => {
+      const remaining = Math.max(0, (s.startTime + s.duration) - stepStart)
+      return `<div class="now-bg-task-item">
+        <span>⏳ ${s.resource}: ${s.recipeName} — ${s.text}</span>
+        <span class="remaining">残り ${remaining}分</span>
+      </div>`
+    }).join('')
+    bgHtml = `<div class="now-bg-tasks">
+      <div class="section-title">裏で進行中</div>
+      ${items}
+    </div>`
+  }
+
+  // Transition prompt: next active step info
+  let transHtml = ''
+  if (nowStepIndex < activeSteps.length - 1) {
+    const next = activeSteps[nowStepIndex + 1]
+    const nextColor = RECIPE_COLORS[recipes.indexOf(next.recipeName) % RECIPE_COLORS.length]
+    const lines = []
+    if (step.resource !== next.resource) {
+      lines.push(`<div class="transition-line">📍 ${step.resource} → ${next.resource}</div>`)
+    }
+    if (step.recipeName !== next.recipeName) {
+      lines.push(`<div class="transition-line">🔀 ${step.recipeName} → ${next.recipeName}へ</div>`)
+    }
+    lines.push(`<div class="transition-line" style="color:${nextColor};font-weight:500">${next.text}</div>`)
+    transHtml = `<div class="now-transition">
+      <div class="section-title">次のステップ</div>
+      ${lines.join('')}
+    </div>`
+  }
+
+  // Navigation
+  const prevDisabled = nowStepIndex <= 0 ? 'disabled' : ''
+  const isLast = nowStepIndex >= activeSteps.length - 1
+
+  container.innerHTML = `<div class="now-container">
+    <div class="now-progress">${dots}</div>
+    <div class="now-step-count">ステップ ${nowStepIndex + 1}/${activeSteps.length}</div>
+    <div class="now-load ${loadClass}">${loadLabel}</div>
+    <div class="now-card">
+      <div class="now-recipe">
+        <span class="color-dot" style="background:${color}"></span>
+        ${step.recipeName}
+      </div>
+      <div class="now-text">${step.text}</div>
+      <div class="now-meta">
+        <span class="badge">📍 ${step.resource}</span>
+        <span class="badge">⏱ ${step.duration}分</span>
+        ${step.isPreStep ? `<span class="badge">${step.prepTag || '🔧 下ごしらえ'}</span>` : ''}
+      </div>
+      <div class="now-timer-ring">
+        <svg viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="50"/>
+          <circle class="ring-fg" cx="60" cy="60" r="50"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="0"
+            style="animation:nowTimer ${durationSec}s linear forwards"/>
+        </svg>
+        <div class="now-timer-label">${timerDisplay}</div>
+      </div>
+    </div>
+    ${bgHtml}
+    ${transHtml}
+    <div class="now-nav">
+      <button onclick="nowPrev()" ${prevDisabled}>← 前へ</button>
+      <button class="primary-nav" onclick="nowNext()">${isLast ? '🎉 完了！' : '✅ 完了 → 次へ'}</button>
+    </div>
+  </div>`
+}
+
+function nowNext() {
+  const activeSteps = getNowActiveSteps()
+  nowStepIndex = Math.min(nowStepIndex + 1, activeSteps.length)
+  renderNowMode()
+}
+
+function nowPrev() {
+  nowStepIndex = Math.max(nowStepIndex - 1, 0)
+  renderNowMode()
 }
 
 // ============================
