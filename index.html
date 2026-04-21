@@ -622,7 +622,14 @@
   </div>
   <div class="card">
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-sm" onclick="generateShoppingFromWeek()">🛒 買い物リストを生成</button>
+      <select id="shopping-scope-select" style="min-width:120px">
+        <option value="today">今日の分</option>
+        <option value="tomorrow">明日の分</option>
+        <option value="2days">今日＋明日</option>
+        <option value="3days">3日分</option>
+        <option value="week" selected>週間まとめ</option>
+      </select>
+      <button class="btn btn-sm" onclick="generateShoppingFromScope()">🛒 買い物リストを生成</button>
       <select id="cooking-day-select" style="flex:1;min-width:120px" onchange="selectCookingDay()">
         <option value="">調理する日を選択...</option>
       </select>
@@ -3104,9 +3111,20 @@ function stopCookingTimer() {
 // ============================
 // 買い物リスト
 // ============================
-function generateShoppingFromWeek() {
+function getShoppingTargetDays(scope) {
+  const todayDow = (new Date().getDay() + 6) % 7;
+  if (scope === 'today') return [todayDow];
+  if (scope === 'tomorrow') return [(todayDow + 1) % 7];
+  if (scope === '2days') return [todayDow, (todayDow + 1) % 7];
+  if (scope === '3days') return [todayDow, (todayDow + 1) % 7, (todayDow + 2) % 7];
+  return [0,1,2,3,4,5,6];
+}
+
+function generateShoppingFromScope() {
+  const scope = document.getElementById('shopping-scope-select')?.value || 'week';
+  const targetDays = getShoppingTargetDays(scope);
   const ingredientMap = {};
-  for (let i = 0; i < 7; i++) {
+  targetDays.forEach(i => {
     SLOTS.forEach(slot => {
       (weekPlan[i][slot]||[]).forEach(item => {
         const recipe = getRecipeById(item.id);
@@ -3123,7 +3141,7 @@ function generateShoppingFromWeek() {
         });
       });
     });
-  }
+  });
 
   shoppingList = Object.values(ingredientMap).map(item => ({
     name: item.name,
@@ -3133,8 +3151,11 @@ function generateShoppingFromWeek() {
   }));
   saveState(); updateShoppingDisplay();
   switchTab('shopping', document.querySelectorAll('.tab-btn')[4]);
-  showToast(`${shoppingList.length}件の材料を買い物リストに追加しました`);
+  const scopeLabel = {today:'今日', tomorrow:'明日', '2days':'今日＋明日', '3days':'3日分', week:'週間まとめ'}[scope];
+  showToast(`${scopeLabel}の材料 ${shoppingList.length}件を買い物リストに追加しました`);
 }
+
+function generateShoppingFromWeek() { generateShoppingFromScope(); }
 
 function addShoppingItem() {
   const name = document.getElementById('new-item-name').value.trim();
