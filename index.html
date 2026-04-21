@@ -3,131 +3,177 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#8a9a7b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoi54yu56uL44OX44Op44Oz44OK44O8IiwiY2hvcnRfbmFtZSI6IueMrueriCIsInN0YXJ0X3VybCI6Ii4vIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2Y4ZjZmMSIsInRoZW1lX2NvbG9yIjoiIzhhOWE3YiJ9">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
 <title>献立プランナー v3</title>
 <style>
   :root {
-    --primary: #4a7c59;
-    --primary-light: #6a9e78;
-    --primary-dark: #365a40;
-    --accent: #e8a838;
-    --accent-light: #f5c56b;
-    --bg: #faf8f5;
-    --card: #ffffff;
-    --text: #2d2d2d;
-    --text-light: #6b6b6b;
-    --border: #e0ddd8;
-    --danger: #c0392b;
-    --success: #27ae60;
-    --kagome: #e74c3c;
-    --ajinomoto: #e67e22;
-    --kikkoman: #8e44ad;
-    --shirogohan: #795548;
-    --hotcook: #e91e63;
+    --primary: #8a9a7b;
+    --primary-light: #a3b396;
+    --primary-dark: #6b7d60;
+    --accent: #c9a96e;
+    --accent-light: #ddc08a;
+    --bg: #f8f6f1;
+    --card: #fefdfb;
+    --text: #3d3a36;
+    --text-light: #8a857d;
+    --border: #e8e4dc;
+    --danger: #c4877a;
+    --success: #8aad7a;
+    --kagome: #c4877a;
+    --ajinomoto: #c9a06a;
+    --kikkoman: #a08aad;
+    --shirogohan: #9a8a7a;
+    --hotcook: #c48a9a;
+    --fav-gold: #c9a96e;
+    --seasonal: #8aad7a;
+    --transition-speed: 0.28s;
+  }
+  [data-theme="dark"] {
+    --primary: #8a9a7b;
+    --primary-light: #a3b396;
+    --primary-dark: #a3b396;
+    --accent: #c9a96e;
+    --accent-light: #ddc08a;
+    --bg: #1c1b1f;
+    --card: #27262b;
+    --text: #ddd9d3;
+    --text-light: #9a958e;
+    --border: #3a3840;
+    --danger: #c4877a;
+    --success: #8aad7a;
+    --kagome: #c4877a;
+    --ajinomoto: #c9a06a;
+    --kikkoman: #a08aad;
+    --shirogohan: #9a8a7a;
+    --hotcook: #c48a9a;
+    --fav-gold: #c9a96e;
+    --seasonal: #8aad7a;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    font-family: 'Hiragino Kaku Gothic ProN','Noto Sans JP','メイリオ',sans-serif;
+    font-family: 'Zen Maru Gothic','Hiragino Kaku Gothic ProN','Noto Sans JP','メイリオ',sans-serif;
     background: var(--bg); color: var(--text); min-height:100vh;
+    line-height: 1.65; transition: background var(--transition-speed), color var(--transition-speed);
   }
 
   /* ヘッダー */
   header {
     background: linear-gradient(135deg, var(--primary), var(--primary-light));
     color: white; padding:16px 20px; text-align:center;
-    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    box-shadow: 0 4px 16px rgba(0,0,0,.06);
     position:sticky; top:0; z-index:100;
     display:flex; align-items:center; justify-content:space-between;
+    transition: background var(--transition-speed);
   }
   header .title-section { flex:1; }
-  header h1 { font-size:1.3rem; letter-spacing:.05em; }
-  header p { font-size:.75rem; opacity:.85; margin-top:2px; }
-  .settings-btn {
-    background:rgba(255,255,255,.2); border:none; color:white;
+  header h1 { font-size:1.3rem; letter-spacing:.05em; font-weight:500; }
+  header p { font-size:.75rem; opacity:.8; margin-top:2px; font-weight:400; }
+  .header-actions { display:flex; gap:6px; align-items:center; }
+  .settings-btn, .theme-toggle-btn {
+    background:rgba(255,255,255,.15); border:none; color:white;
     width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.2rem;
+    transition: background var(--transition-speed);
   }
-  .settings-btn:hover { background:rgba(255,255,255,.3); }
+  .settings-btn:hover, .theme-toggle-btn:hover { background:rgba(255,255,255,.25); }
 
   /* タブ */
   .tabs {
-    display:flex; background:var(--card); border-bottom:2px solid var(--border);
+    display:flex; background:var(--card); border-bottom:1px solid var(--border);
     position:sticky; top:60px; z-index:99; overflow-x:auto; overflow-y:hidden;
+    transition: background var(--transition-speed);
   }
   .tab-btn {
     flex:1; min-width:0; padding:10px 4px; border:none; background:none;
-    font-size:.72rem; font-weight:600; color:var(--text-light); cursor:pointer;
+    font-size:.72rem; font-weight:500; color:var(--text-light); cursor:pointer;
     border-bottom:3px solid transparent; white-space:nowrap;
+    transition: all var(--transition-speed);
   }
-  .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); background:rgba(74,124,89,.05); }
-  .tab-btn:hover { background:rgba(74,124,89,.05); }
+  .tab-btn.active { color:var(--primary-dark); border-bottom-color:var(--primary); background:rgba(138,154,123,.06); }
+  .tab-btn:hover { background:rgba(138,154,123,.06); }
   .tab-content { display:none; padding:16px; max-width:900px; margin:0 auto; }
   .tab-content.active { display:block; }
 
   /* カード */
   .card {
-    background:var(--card); border-radius:12px; padding:16px; margin-bottom:12px;
-    box-shadow:0 2px 8px rgba(0,0,0,.08); border:1px solid var(--border);
+    background:var(--card); border-radius:16px; padding:16px; margin-bottom:12px;
+    box-shadow:0 2px 12px rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.05);
+    transition: background var(--transition-speed), box-shadow var(--transition-speed);
   }
-  .card h3 { font-size:.95rem; margin-bottom:12px; }
+  .card h3 { font-size:.95rem; margin-bottom:12px; font-weight:500; }
 
   /* ボタン */
   .btn {
-    padding:10px 16px; border:none; border-radius:8px; font-size:.85rem;
-    font-weight:600; cursor:pointer; transition:.2s; text-align:center;
+    padding:10px 16px; border:none; border-radius:12px; font-size:.85rem;
+    font-weight:500; cursor:pointer; transition: all var(--transition-speed) ease; text-align:center;
     background:linear-gradient(135deg, var(--primary), var(--primary-light)); color:white;
   }
-  .btn:hover { box-shadow:0 4px 12px rgba(74,124,89,.3); }
+  .btn:hover { box-shadow:0 4px 16px rgba(138,154,123,.2); }
   .btn:active { transform:scale(.97); }
   .btn-sm { padding:8px 12px; font-size:.8rem; }
-  .btn-outline { background:none; color:var(--primary); border:2px solid var(--primary); }
-  .btn-outline:hover { background:rgba(74,124,89,.1); box-shadow:none; }
-  .btn-outline.active { background:var(--primary); color:white; }
+  .btn-outline { background:none; color:var(--primary-dark); border:1.5px solid var(--border); }
+  .btn-outline:hover { background:rgba(138,154,123,.08); box-shadow:none; }
+  .btn-outline.active { background:var(--primary); color:white; border-color:var(--primary); }
   .btn-danger { background:var(--danger); }
+  .btn-fav { background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 4px; transition: transform var(--transition-speed); }
+  .btn-fav:hover { transform:scale(1.2); }
+  .btn-fav.active { filter:drop-shadow(0 0 4px rgba(201,169,110,.5)); }
 
   /* フォーム */
   input,textarea,select {
-    width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;
+    width:100%; padding:10px; border:1px solid var(--border); border-radius:12px;
     font-size:.9rem; font-family:inherit; margin-bottom:8px;
+    background:var(--card); color:var(--text); transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
   }
   input:focus,textarea:focus,select:focus {
-    outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(74,124,89,.1);
+    outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(138,154,123,.12);
   }
 
   /* ========== 週間献立ボード ========== */
   .week-board { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; }
   .day-column {
-    min-width:130px; flex:1; background:var(--card); border:1px solid var(--border);
-    border-radius:10px; padding:10px; display:flex; flex-direction:column;
+    min-width:130px; flex:1; background:var(--card); border:1px solid rgba(0,0,0,.04);
+    border-radius:14px; padding:10px; display:flex; flex-direction:column;
+    transition: background var(--transition-speed);
   }
   .day-header {
-    text-align:center; font-weight:700; font-size:.85rem; padding:6px;
-    border-radius:6px; margin-bottom:8px; color:white;
+    text-align:center; font-weight:500; font-size:.85rem; padding:6px;
+    border-radius:10px; margin-bottom:8px; color:white;
     background:linear-gradient(135deg, var(--primary), var(--primary-light));
   }
   .day-header.today { background:linear-gradient(135deg, var(--accent), var(--accent-light)); }
-  .day-header.sun { background:linear-gradient(135deg, #c0392b, #e74c3c); }
-  .day-header.sat { background:linear-gradient(135deg, #2980b9, #3498db); }
+  .day-header.sun { background:linear-gradient(135deg, #c4877a, #d4a090); }
+  .day-header.sat { background:linear-gradient(135deg, #7a9aad, #8aaabe); }
   .slot-section { margin-bottom:8px; }
   .slot-label {
     font-size:.7rem; font-weight:600; color:var(--text-light);
     margin-bottom:4px; text-transform:uppercase; letter-spacing:.03em;
   }
   .slot-item {
-    background:var(--bg); padding:6px 8px; border-radius:6px; font-size:.78rem;
+    background:var(--bg); padding:6px 8px; border-radius:10px; font-size:.78rem;
     margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;
-    border-left:3px solid var(--accent); cursor:pointer; transition:.15s;
+    border-left:3px solid var(--accent); cursor:pointer; transition: all var(--transition-speed) ease;
   }
-  .slot-item:hover { background:#f0ede8; }
+  .slot-item:hover { background:rgba(138,154,123,.06); }
   .slot-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .slot-item .remove-btn {
     background:var(--danger); color:white; border:none; width:18px; height:18px;
-    border-radius:4px; cursor:pointer; font-size:.65rem; flex-shrink:0; margin-left:4px;
-    display:flex; align-items:center; justify-content:center;
+    border-radius:6px; cursor:pointer; font-size:.65rem; flex-shrink:0; margin-left:4px;
+    display:flex; align-items:center; justify-content:center; opacity:.7;
+    transition: opacity var(--transition-speed);
   }
+  .slot-item .remove-btn:hover { opacity:1; }
   .slot-empty {
-    border:1px dashed var(--border); border-radius:6px; padding:8px; text-align:center;
-    font-size:.72rem; color:#bbb; cursor:pointer;
+    border:1px dashed var(--border); border-radius:10px; padding:8px; text-align:center;
+    font-size:.72rem; color:var(--text-light); cursor:pointer; opacity:.6;
+    transition: all var(--transition-speed);
   }
-  .slot-empty:hover { border-color:var(--primary); color:var(--primary); }
+  .slot-empty:hover { border-color:var(--primary); color:var(--primary); opacity:1; }
   .day-lock {
     font-size:.7rem; text-align:center; margin-top:auto; padding-top:6px;
     border-top:1px solid var(--border);
@@ -138,23 +184,26 @@
   /* ========== レシピカード ========== */
   .recipe-grid { display:grid; grid-template-columns:1fr; gap:10px; }
   .recipe-card {
-    background:var(--card); border:1px solid var(--border); border-radius:12px;
-    padding:12px; cursor:pointer; transition:.2s;
+    background:var(--card); border:1px solid rgba(0,0,0,.05); border-radius:16px;
+    padding:12px; cursor:pointer; transition: all var(--transition-speed) ease;
   }
-  .recipe-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.12); border-color:var(--primary); }
-  .recipe-card.ng-recipe { opacity:.55; border-color:#e74c3c; background:repeating-linear-gradient(135deg,var(--card),var(--card) 10px,rgba(231,76,60,.04) 10px,rgba(231,76,60,.04) 20px); }
-  .recipe-title { font-weight:600; font-size:.95rem; margin-bottom:4px; }
+  .recipe-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.06); border-color:var(--primary); }
+  .recipe-card.ng-recipe { opacity:.45; border-color:var(--danger); border-style:dashed; }
+  .recipe-card.fav-recipe { border-color:var(--fav-gold); box-shadow:0 0 0 1px rgba(201,169,110,.15), 0 2px 12px rgba(201,169,110,.08); }
+  .recipe-title { font-weight:500; font-size:.95rem; margin-bottom:4px; }
+  .seasonal-badge { display:inline-block; font-size:.65rem; background:rgba(138,173,122,.12); color:var(--seasonal); padding:1px 6px; border-radius:8px; margin-left:4px; font-weight:500; }
+  .history-badge { display:inline-block; font-size:.65rem; color:var(--text-light); margin-left:4px; opacity:.7; }
   .recipe-meta { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
   .recipe-tag {
-    background:rgba(74,124,89,.1); color:var(--primary); padding:2px 8px;
-    border-radius:4px; font-size:.72rem;
+    background:rgba(138,154,123,.1); color:var(--primary-dark); padding:2px 8px;
+    border-radius:8px; font-size:.72rem;
   }
-  .recipe-tag.cat { background:rgba(232,168,56,.15); color:#b87d1a; }
-  .recipe-tag.time { background:rgba(41,128,185,.1); color:#2980b9; }
-  .recipe-tag.src-kagome { background:rgba(231,76,60,.12); color:var(--kagome); }
-  .recipe-tag.src-ajinomoto { background:rgba(230,126,34,.12); color:var(--ajinomoto); }
-  .recipe-tag.src-kikkoman { background:rgba(142,68,173,.12); color:var(--kikkoman); }
-  .recipe-tag.src-shirogohan { background:rgba(121,85,72,.12); color:var(--shirogohan); }
+  .recipe-tag.cat { background:rgba(201,169,110,.12); color:var(--accent); }
+  .recipe-tag.time { background:rgba(122,154,173,.1); color:#7a9aad; }
+  .recipe-tag.src-kagome { background:rgba(196,135,122,.1); color:var(--kagome); }
+  .recipe-tag.src-ajinomoto { background:rgba(201,160,106,.1); color:var(--ajinomoto); }
+  .recipe-tag.src-kikkoman { background:rgba(160,138,173,.1); color:var(--kikkoman); }
+  .recipe-tag.src-shirogohan { background:rgba(154,138,122,.1); color:var(--shirogohan); }
   .recipe-desc { font-size:.82rem; color:var(--text-light); line-height:1.4; }
   .recipe-actions { display:flex; gap:6px; margin-top:8px; }
   .site-link {
@@ -177,20 +226,20 @@
   .gantt-row { display:flex; align-items:stretch; margin-bottom:6px; min-height:52px; }
   .gantt-label {
     width:84px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
-    background:rgba(74,124,89,.06); border:1px solid var(--border); border-radius:6px;
-    font-size:.75rem; font-weight:600; color:var(--text-light); margin-right:6px; text-align:center; padding:4px;
+    background:rgba(138,154,123,.06); border:1px solid rgba(0,0,0,.04); border-radius:10px;
+    font-size:.75rem; font-weight:500; color:var(--text-light); margin-right:6px; text-align:center; padding:4px;
   }
   .gantt-track {
     flex:1; position:relative; background:rgba(0,0,0,.02); border-radius:6px;
     border:1px solid rgba(0,0,0,.04); min-height:50px;
   }
   .gantt-block {
-    position:absolute; top:4px; bottom:4px; border-radius:5px;
+    position:absolute; top:4px; bottom:4px; border-radius:10px;
     padding:4px 8px; font-size:.72rem; color:white; cursor:pointer;
     display:flex; flex-direction:column; justify-content:center; overflow:hidden;
-    transition:box-shadow .2s,transform .15s; box-shadow:0 1px 3px rgba(0,0,0,.15); line-height:1.3;
+    transition:box-shadow var(--transition-speed),transform var(--transition-speed); box-shadow:0 1px 4px rgba(0,0,0,.08); line-height:1.3;
   }
-  .gantt-block:hover { box-shadow:0 3px 10px rgba(0,0,0,.25); transform:translateY(-1px); z-index:5; }
+  .gantt-block:hover { box-shadow:0 3px 12px rgba(0,0,0,.12); transform:translateY(-1px); z-index:5; }
   .gantt-block-title { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:.7rem; }
   .gantt-block-desc { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:.9; font-size:.65rem; }
   .gantt-block-time { font-size:.6rem; opacity:.75; margin-top:1px; }
@@ -204,17 +253,17 @@
   .step-list-title { font-size:.9rem; font-weight:700; color:var(--primary); margin-bottom:10px; }
   .step-card {
     display:flex; gap:10px; padding:10px 12px; margin-bottom:6px;
-    background:var(--bg); border:1px solid var(--border); border-radius:8px;
-    border-left:4px solid var(--primary); transition:.15s;
+    background:var(--bg); border:1px solid rgba(0,0,0,.04); border-radius:12px;
+    border-left:4px solid var(--primary); transition: all var(--transition-speed);
   }
-  .step-card:hover { background:#f0ede8; }
+  .step-card:hover { background:rgba(138,154,123,.04); }
   .step-card.parallel-indicator {
-    background:rgba(232,168,56,.08); border-left-color:var(--accent);
+    background:rgba(201,169,110,.08); border-left-color:var(--accent);
   }
   .step-time-badge {
     flex-shrink:0; width:52px; text-align:center;
-    background:var(--primary); color:white; border-radius:6px;
-    padding:4px 0; font-size:.72rem; font-weight:600;
+    background:var(--primary); color:white; border-radius:10px;
+    padding:4px 0; font-size:.72rem; font-weight:500;
     display:flex; flex-direction:column; justify-content:center; line-height:1.2;
   }
   .step-time-badge .t-start { font-size:.85rem; }
@@ -223,17 +272,18 @@
   .step-recipe-name { font-size:.72rem; font-weight:600; color:var(--primary-dark); margin-bottom:2px; }
   .step-text { font-size:.82rem; color:var(--text); line-height:1.4; }
   .step-resource-tag {
-    display:inline-block; font-size:.65rem; background:rgba(74,124,89,.1);
-    color:var(--primary-dark); padding:1px 6px; border-radius:4px; margin-top:3px;
+    display:inline-block; font-size:.65rem; background:rgba(138,154,123,.1);
+    color:var(--primary-dark); padding:1px 6px; border-radius:8px; margin-top:3px;
   }
   .step-parallel-tag {
-    display:inline-block; font-size:.65rem; background:rgba(232,168,56,.15);
-    color:#b87d1a; padding:1px 6px; border-radius:4px; margin-top:3px; margin-left:4px;
+    display:inline-block; font-size:.65rem; background:rgba(201,169,110,.12);
+    color:#a08a5a; padding:1px 6px; border-radius:8px; margin-top:3px; margin-left:4px;
   }
   .view-toggle-btns { display:flex; gap:6px; margin-bottom:12px; }
   .view-toggle-btn {
-    padding:6px 14px; border:1px solid var(--border); border-radius:6px;
-    background:white; font-size:.8rem; cursor:pointer; transition:.15s;
+    padding:6px 14px; border:1px solid var(--border); border-radius:10px;
+    background:var(--card); font-size:.8rem; cursor:pointer; transition: all var(--transition-speed);
+    color:var(--text);
   }
   .view-toggle-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
 
@@ -243,7 +293,7 @@
     margin-bottom:12px;
   }
   .efficiency-stat {
-    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    background:var(--bg); border:1px solid rgba(0,0,0,.04); border-radius:12px;
     padding:10px; text-align:center;
   }
   .efficiency-stat .stat-label { font-size:.7rem; color:var(--text-light); margin-bottom:2px; }
@@ -253,7 +303,8 @@
   /* ========== 買い物リスト ========== */
   .shopping-item {
     display:flex; align-items:center; padding:10px 12px; background:var(--card);
-    border:1px solid var(--border); border-radius:8px; margin-bottom:6px; gap:10px;
+    border:1px solid rgba(0,0,0,.04); border-radius:12px; margin-bottom:6px; gap:10px;
+    transition: all var(--transition-speed);
   }
   .shopping-item.checked { opacity:.5; text-decoration:line-through; }
   .shopping-item input[type="checkbox"] { width:auto; margin:0; cursor:pointer; }
@@ -263,15 +314,17 @@
   .shopping-item-source { font-size:.72rem; color:#999; }
   .shopping-item .remove-btn {
     background:var(--danger); color:white; border:none; width:26px; height:26px;
-    border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    opacity:.7; transition: opacity var(--transition-speed);
   }
+  .shopping-item .remove-btn:hover { opacity:1; }
 
   /* ========== 栄養チャート ========== */
   .nutrition-summary {
     display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;
   }
   .nutrition-card {
-    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    background:var(--bg); border:1px solid rgba(0,0,0,.04); border-radius:12px;
     padding:12px; text-align:center;
   }
   .nutrition-card .label { font-size:.75rem; color:var(--text-light); margin-bottom:4px; }
@@ -281,24 +334,26 @@
   }
   .nutrition-card .bar-fill { height:100%; border-radius:3px; transition:width .5s; }
   .nutrition-alert {
-    padding:10px 14px; border-radius:8px; font-size:.82rem; margin-bottom:8px;
+    padding:10px 14px; border-radius:12px; font-size:.82rem; margin-bottom:8px;
     border-left:4px solid;
   }
-  .nutrition-alert.warn { background:#fff3cd; border-color:#ffc107; color:#856404; }
-  .nutrition-alert.good { background:#d4edda; border-color:#28a745; color:#155724; }
+  .nutrition-alert.warn { background:rgba(201,169,110,.1); border-color:var(--accent); color:var(--text); }
+  .nutrition-alert.good { background:rgba(138,173,122,.1); border-color:var(--success); color:var(--text); }
 
   /* ========== モーダル ========== */
   .modal {
-    display:none; position:fixed; inset:0; background:rgba(0,0,0,.4);
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.25);
     z-index:300; align-items:center; justify-content:center;
+    backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
   }
   .modal.show { display:flex; }
   .modal-content {
-    background:white; border-radius:14px; padding:24px; width:92%;
+    background:var(--card); border-radius:20px; padding:24px; width:92%;
     max-width:500px; max-height:85vh; overflow-y:auto;
-    box-shadow:0 8px 24px rgba(0,0,0,.2); position:relative;
+    box-shadow:0 8px 32px rgba(0,0,0,.1); position:relative;
+    transition: background var(--transition-speed);
   }
-  .modal-title { font-size:1rem; font-weight:700; margin-bottom:16px; }
+  .modal-title { font-size:1rem; font-weight:500; margin-bottom:16px; }
   .modal-close {
     position:absolute; top:12px; right:12px; background:none;
     border:none; font-size:1.5rem; cursor:pointer; color:var(--text-light);
@@ -307,8 +362,9 @@
   /* スロットモーダル: ソースタブ */
   .source-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px; }
   .source-tab {
-    padding:5px 10px; border:1px solid var(--border); border-radius:6px;
-    background:white; font-size:.75rem; cursor:pointer; transition:.15s;
+    padding:5px 10px; border:1px solid var(--border); border-radius:10px;
+    background:var(--card); font-size:.75rem; cursor:pointer; transition: all var(--transition-speed);
+    color:var(--text);
   }
   .source-tab.active { background:var(--primary); color:white; border-color:var(--primary); }
   .source-tab[data-src="kagome"].active { background:var(--kagome); border-color:var(--kagome); }
@@ -319,9 +375,10 @@
 
   /* トースト */
   .toast {
-    position:fixed; bottom:20px; left:20px; right:20px; background:var(--primary);
-    color:white; padding:14px 20px; border-radius:8px;
-    box-shadow:0 4px 12px rgba(0,0,0,.15); display:none; z-index:1000;
+    position:fixed; bottom:20px; left:20px; right:20px; background:var(--card);
+    color:var(--text); padding:14px 20px; border-radius:14px;
+    box-shadow:0 4px 20px rgba(0,0,0,.08); border:1px solid rgba(0,0,0,.05);
+    display:none; z-index:1000;
     animation:slideUp .3s ease-out; font-size:.88rem;
   }
   .toast.show { display:block; }
@@ -334,6 +391,28 @@
   .empty-state { text-align:center; padding:40px 20px; color:var(--text-light); }
   .empty-state .icon { font-size:3rem; margin-bottom:12px; opacity:.5; }
   .empty-state p { line-height:1.6; }
+
+  /* ダークモード追加調整 */
+  [data-theme="dark"] .recipe-tag { background:rgba(255,255,255,.08); }
+  [data-theme="dark"] .recipe-tag.cat { background:rgba(201,169,110,.18); }
+  [data-theme="dark"] .recipe-tag.time { background:rgba(122,154,173,.18); }
+  [data-theme="dark"] .recipe-card { border-color:var(--border); }
+  [data-theme="dark"] .btn-outline { color:var(--text); border-color:var(--border); }
+  [data-theme="dark"] .btn-outline:hover { background:rgba(255,255,255,.06); }
+  [data-theme="dark"] .slot-item { background:rgba(255,255,255,.04); }
+  [data-theme="dark"] .slot-item:hover { background:rgba(255,255,255,.08); }
+  [data-theme="dark"] .slot-empty { border-color:var(--border); color:var(--text-light); }
+  [data-theme="dark"] .modal-content { background:var(--card); color:var(--text); }
+  [data-theme="dark"] input,[data-theme="dark"] textarea,[data-theme="dark"] select { background:var(--bg); color:var(--text); border-color:var(--border); }
+  [data-theme="dark"] .source-tab { background:var(--bg); color:var(--text-light); border-color:var(--border); }
+  [data-theme="dark"] .efficiency-stat { background:rgba(255,255,255,.04); }
+  [data-theme="dark"] .step-card { background:rgba(255,255,255,.04); }
+  [data-theme="dark"] .shopping-item { background:var(--card); }
+  [data-theme="dark"] .nutrition-card { background:rgba(255,255,255,.04); }
+  [data-theme="dark"] .day-summary-card { background:rgba(255,255,255,.04); }
+  [data-theme="dark"] .gantt-label { background:rgba(255,255,255,.06); }
+  [data-theme="dark"] .gantt-track { background:rgba(255,255,255,.02); }
+  [data-theme="dark"] .view-toggle-btn { background:var(--card); color:var(--text); border-color:var(--border); }
 
   /* レスポンシブ */
   @media (max-width:600px) {
@@ -354,11 +433,11 @@
     gap:8px;
   }
   .day-summary-card {
-    background:var(--bg); border:1px solid var(--border); border-radius:10px;
-    padding:10px; text-align:center; cursor:pointer; transition:.2s;
+    background:var(--bg); border:1px solid rgba(0,0,0,.04); border-radius:14px;
+    padding:10px; text-align:center; cursor:pointer; transition: all var(--transition-speed);
     position:relative;
   }
-  .day-summary-card:hover { box-shadow:0 2px 8px rgba(0,0,0,.1); transform:translateY(-1px); }
+  .day-summary-card:hover { box-shadow:0 2px 12px rgba(0,0,0,.06); transform:translateY(-1px); }
   .day-summary-card .day-name {
     font-weight:700; font-size:.85rem; margin-bottom:6px; padding:3px 8px;
     border-radius:6px; color:white; display:inline-block;
@@ -377,11 +456,95 @@
   }
   .week-summary-totals {
     display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; padding:10px;
-    background:rgba(74,124,89,.05); border-radius:8px; font-size:.8rem;
+    background:rgba(138,154,123,.05); border-radius:12px; font-size:.8rem;
     justify-content:center;
   }
   .week-summary-totals span { white-space:nowrap; }
   .week-summary-totals strong { color:var(--primary); }
+
+  /* ========== NOWモード ========== */
+  .now-container { max-width:540px; margin:0 auto; }
+  .now-progress { display:flex; align-items:center; gap:5px; justify-content:center; flex-wrap:wrap; margin-bottom:6px; }
+  .now-progress .dot {
+    width:10px; height:10px; border-radius:50%; background:var(--border);
+    transition: background var(--transition-speed);
+  }
+  .now-progress .dot.done { background:var(--primary); }
+  .now-progress .dot.current { background:var(--accent); box-shadow:0 0 0 3px rgba(201,169,110,.25); }
+  .now-step-count { text-align:center; font-size:.8rem; color:var(--text-light); margin-bottom:14px; }
+
+  .now-load {
+    text-align:center; font-size:.85rem; padding:6px 14px; border-radius:10px;
+    margin-bottom:14px; font-weight:500;
+  }
+  .now-load.load-low { background:rgba(138,173,122,.12); color:#6b8a5a; }
+  .now-load.load-mid { background:rgba(201,169,110,.14); color:#a08a5a; }
+  .now-load.load-high { background:rgba(196,135,122,.14); color:#c4877a; }
+
+  .now-card {
+    background:var(--card); border:1px solid rgba(0,0,0,.05); border-radius:18px;
+    padding:24px 20px; margin-bottom:14px;
+    box-shadow:0 2px 12px rgba(0,0,0,.04);
+    transition: all var(--transition-speed);
+  }
+  .now-recipe { display:flex; align-items:center; gap:8px; font-size:.85rem; font-weight:500; margin-bottom:10px; }
+  .now-recipe .color-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+  .now-text { font-size:1.15rem; line-height:1.6; font-weight:500; color:var(--text); margin-bottom:14px; }
+  .now-meta { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .now-meta .badge {
+    display:inline-flex; align-items:center; gap:4px; padding:4px 12px;
+    background:var(--bg); border-radius:10px; font-size:.8rem; color:var(--text-light);
+  }
+
+  .now-timer-ring { display:flex; flex-direction:column; align-items:center; margin:0 auto; }
+  .now-timer-ring svg { width:120px; height:120px; }
+  .now-timer-ring .ring-bg { fill:none; stroke:var(--border); stroke-width:6; }
+  .now-timer-ring .ring-fg {
+    fill:none; stroke:var(--primary); stroke-width:6; stroke-linecap:round;
+    transform:rotate(-90deg); transform-origin:center;
+    animation-timing-function:linear; animation-fill-mode:forwards;
+  }
+  @keyframes nowTimer { from { stroke-dashoffset:0; } to { stroke-dashoffset:314; } }
+  .now-timer-label { font-size:1.6rem; font-weight:700; color:var(--primary); margin-top:-76px; margin-bottom:40px; }
+
+  .now-bg-tasks {
+    background:var(--bg); border:1px solid rgba(0,0,0,.04); border-radius:14px;
+    padding:14px 16px; margin-bottom:14px;
+  }
+  .now-bg-tasks .section-title { font-size:.78rem; color:var(--text-light); font-weight:500; margin-bottom:8px; }
+  .now-bg-task-item { font-size:.84rem; color:var(--text); padding:4px 0; display:flex; justify-content:space-between; }
+  .now-bg-task-item .remaining { color:var(--text-light); font-size:.78rem; }
+
+  .now-transition {
+    background:rgba(201,169,110,.08); border:1px solid rgba(201,169,110,.15); border-radius:14px;
+    padding:14px 16px; margin-bottom:14px;
+  }
+  .now-transition .section-title { font-size:.78rem; color:var(--accent); font-weight:500; margin-bottom:8px; }
+  .now-transition .transition-line { font-size:.84rem; color:var(--text); padding:2px 0; }
+
+  .now-nav { display:flex; gap:10px; justify-content:center; }
+  .now-nav button {
+    padding:10px 24px; border:1px solid var(--border); border-radius:12px;
+    background:var(--card); font-size:.88rem; cursor:pointer;
+    transition:all var(--transition-speed); color:var(--text);
+  }
+  .now-nav button.primary-nav {
+    background:var(--primary); color:white; border-color:var(--primary); font-weight:600;
+  }
+  .now-nav button:disabled { opacity:.4; cursor:default; }
+  .now-complete-msg {
+    text-align:center; padding:40px 20px; color:var(--success); font-size:1.1rem; font-weight:600;
+  }
+
+  [data-theme="dark"] .now-card { background:var(--card); border-color:var(--border); box-shadow:0 2px 12px rgba(0,0,0,.15); }
+  [data-theme="dark"] .now-bg-tasks { background:rgba(255,255,255,.03); border-color:var(--border); }
+  [data-theme="dark"] .now-transition { background:rgba(201,169,110,.06); border-color:rgba(201,169,110,.12); }
+  [data-theme="dark"] .now-meta .badge { background:rgba(255,255,255,.06); }
+  [data-theme="dark"] .now-load.load-low { background:rgba(138,173,122,.1); color:#8aad7a; }
+  [data-theme="dark"] .now-load.load-mid { background:rgba(201,169,110,.1); color:#ddc08a; }
+  [data-theme="dark"] .now-load.load-high { background:rgba(196,135,122,.1); color:#c4877a; }
+  [data-theme="dark"] .now-nav button { background:var(--card); color:var(--text); border-color:var(--border); }
+  [data-theme="dark"] .now-nav button.primary-nav { background:var(--primary); color:white; border-color:var(--primary); }
 </style>
 </head>
 <body>
@@ -391,7 +554,10 @@
     <h1>🍽️ 献立プランナー</h1>
     <p>毎日の食卓を簡単に</p>
   </div>
-  <button class="settings-btn" onclick="openSettings()">⚙️</button>
+  <div class="header-actions">
+    <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle" title="ダーク/ライトモード切替">🌙</button>
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+  </div>
 </header>
 
 <div class="tabs">
@@ -459,6 +625,7 @@
       <button class="btn-outline btn-sm" style="border-color:var(--shirogohan);color:var(--shirogohan)" onclick="filterBySource('shirogohan',this)">白ごはん</button>
       <button class="btn-outline btn-sm" style="border-color:var(--hotcook);color:var(--hotcook)" onclick="filterBySource('hotcook',this)">ホットクック</button>
       <button class="btn-outline btn-sm" onclick="filterBySource('my',this)">マイレシピ</button>
+      <button class="btn-outline btn-sm" onclick="filterBySource('fav',this)" style="border-color:var(--fav-gold);color:var(--fav-gold)">⭐ お気に入り</button>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="category-filters">
       <button class="btn-outline btn-sm active" onclick="filterByCategory('all',this)">すべて</button>
@@ -467,6 +634,7 @@
       <button class="btn-outline btn-sm" onclick="filterByCategory('汁物',this)">🍲 汁物</button>
       <button class="btn-outline btn-sm" onclick="filterByCategory('サラダ',this)">🥬 サラダ</button>
       <button class="btn-outline btn-sm" onclick="filterByCategory('主食',this)">🍚 主食</button>
+      <button class="btn-outline btn-sm" onclick="filterByCategory('seasonal',this)" style="border-color:var(--seasonal);color:var(--seasonal)">🌿 旬</button>
     </div>
     <div id="recipe-list" class="recipe-grid"></div>
     <div id="recipe-empty" class="empty-state" style="display:none">
@@ -501,6 +669,7 @@
     <div class="view-toggle-btns">
       <button class="view-toggle-btn active" onclick="toggleTimelineView('gantt',this)">ガントチャート</button>
       <button class="view-toggle-btn" onclick="toggleTimelineView('list',this)">ステップリスト</button>
+      <button class="view-toggle-btn" onclick="toggleTimelineView('now',this)">▶ NOWモード</button>
     </div>
     <div id="timeline-container" class="timeline-container"></div>
     <div id="timeline-empty" class="empty-state">
@@ -512,7 +681,7 @@
     <button class="btn" id="timer-btn" onclick="startCookingTimer()" style="width:100%">▶️ 調理タイマーをスタート</button>
     <button class="btn btn-outline" id="timer-stop-btn" onclick="stopCookingTimer()" style="width:100%;display:none;margin-top:8px">⏹️ タイマーを停止</button>
     <div id="timer-display" style="display:none;text-align:center;padding:20px;font-size:2.2rem;font-weight:bold;color:var(--primary)"></div>
-    <div id="current-step" style="display:none;padding:12px;background:rgba(74,124,89,.1);border-radius:8px;margin-top:12px"></div>
+    <div id="current-step" style="display:none;padding:12px;background:rgba(138,154,123,.1);border-radius:8px;margin-top:12px"></div>
   </div>
 </div>
 
@@ -655,6 +824,7 @@ let shoppingList = [];
 let selectedCookingDay = -1;
 let cookingTimeline = null;
 let currentTimelineView = 'gantt';
+let nowStepIndex = 0;
 let timerInterval = null;
 let timerSeconds = 0;
 let notionSettings = {token:'',parentPageId:''};
@@ -663,7 +833,50 @@ let currentCategoryFilter = 'all';
 let pendingSlotInfo = null;
 let editingRecipeId = null;
 let ngRecipes = new Set(); // 自動生成NGレシピ
+let favRecipes = new Set(); // お気に入りレシピ
+let recipeHistory = []; // レシピ使用履歴 [{id, date, slot}, ...]
 let slotSourceFilter = 'all';
+
+// ============================
+// 旬の食材マップ
+// ============================
+const SEASON_MAP = {
+  1: ['白菜','大根','ほうれん草','ぶり','かに'],
+  2: ['白菜','菜の花','いちご'],
+  3: ['菜の花','たけのこ','新玉ねぎ','あさり'],
+  4: ['たけのこ','新玉ねぎ','アスパラ','たい'],
+  5: ['アスパラ','トマト','そら豆','かつお'],
+  6: ['トマト','きゅうり','なす','あじ'],
+  7: ['トマト','きゅうり','なす','枝豆','うなぎ'],
+  8: ['なす','ゴーヤ','とうもろこし','すいか'],
+  9: ['さんま','きのこ','さつまいも','なす'],
+  10: ['さんま','きのこ','さつまいも','かぼちゃ','鮭'],
+  11: ['かぼちゃ','白菜','大根','りんご','牡蠣'],
+  12: ['白菜','大根','ほうれん草','かに','ぶり']
+};
+
+function isSeasonalRecipe(recipe) {
+  const month = new Date().getMonth() + 1;
+  const seasonal = SEASON_MAP[month] || [];
+  if (seasonal.length === 0) return false;
+  const ingredients = (recipe.ingredients || []).map(ing => {
+    if (typeof ing === 'string') return ing.split('/')[0];
+    return ing.name || '';
+  });
+  return ingredients.some(ingName =>
+    seasonal.some(s => ingName.includes(s) || s.includes(ingName))
+  ) || (recipe.tags || []).some(tag =>
+    seasonal.some(s => tag.includes(s))
+  );
+}
+
+function getRecipeHistoryDaysAgo(recipeId) {
+  const now = Date.now();
+  const found = recipeHistory.filter(h => h.id === recipeId);
+  if (found.length === 0) return -1;
+  const latest = Math.max(...found.map(h => new Date(h.date).getTime()));
+  return Math.floor((now - latest) / (1000 * 60 * 60 * 24));
+}
 
 // ============================
 // レシピDB — 基本
@@ -889,6 +1102,8 @@ function saveState() {
   localStorage.setItem('v3_shop', JSON.stringify(shoppingList));
   localStorage.setItem('v3_cookday', selectedCookingDay);
   localStorage.setItem('v3_ng', JSON.stringify([...ngRecipes]));
+  localStorage.setItem('v3_fav', JSON.stringify([...favRecipes]));
+  localStorage.setItem('v3_history', JSON.stringify(recipeHistory));
 }
 function loadState() {
   try {
@@ -905,6 +1120,12 @@ function loadState() {
     weekPlan.forEach(day => { if (!day.shushoku) day.shushoku = []; });
     const ng = localStorage.getItem('v3_ng');
     if (ng) ngRecipes = new Set(JSON.parse(ng));
+    const fav = localStorage.getItem('v3_fav');
+    if (fav) favRecipes = new Set(JSON.parse(fav));
+    const hist = localStorage.getItem('v3_history');
+    if (hist) recipeHistory = JSON.parse(hist);
+    // 履歴は最大200件まで保持
+    if (recipeHistory.length > 200) recipeHistory = recipeHistory.slice(-200);
   } catch(e) { console.error('loadState error', e); }
 }
 function loadNotionSettings() {
@@ -1018,10 +1239,27 @@ function autoGenerateWeek() {
   const fukusaiPool = all.filter(r => recipeMatchesSlot(r, 'fukusai'));
   const shirumonoPool = all.filter(r => recipeMatchesSlot(r, 'shirumono'));
 
+  // 直近2週間に使ったレシピIDセット (ソフト回避)
+  const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const recentIds = new Set(recipeHistory.filter(h => new Date(h.date).getTime() > twoWeeksAgo).map(h => h.id));
+
   function pickRandom(pool, used, excludeHC) {
     let available = pool.filter(r => !used.has(r.id));
     // ホットクック1台制約: その日に既にHCレシピがあれば除外
     if (excludeHC) available = available.filter(r => !isHotcookRecipe(r));
+
+    // お気に入り優先: 40%の確率でお気に入りから選ぶ
+    if (available.length > 0 && favRecipes.size > 0 && Math.random() < 0.4) {
+      const favPool = available.filter(r => favRecipes.has(r.id));
+      if (favPool.length > 0) available = favPool;
+    }
+
+    // 直近2週間使ったレシピをソフト回避 (代替がある場合のみ)
+    if (available.length > 1) {
+      const fresh = available.filter(r => !recentIds.has(r.id));
+      if (fresh.length > 0) available = fresh;
+    }
+
     if (available.length === 0) {
       // フォールバック: HC除外のみ
       available = pool.filter(r => !used.has(r.id) && (!excludeHC || !isHotcookRecipe(r)));
@@ -1034,6 +1272,8 @@ function autoGenerateWeek() {
   }
 
   const usedSk = new Set(), usedS = new Set(), usedF = new Set(), usedSh = new Set();
+  const newHistoryEntries = [];
+  const today = new Date().toISOString().split('T')[0];
 
   for (let i = 0; i < 7; i++) {
     if (weekPlan[i].locked) continue;
@@ -1053,9 +1293,15 @@ function autoGenerateWeek() {
       shirumono: sh ? [{id:sh.id, title:sh.title}] : [],
       locked: false
     };
+    // 履歴に記録
+    if (sk) newHistoryEntries.push({id:sk.id, date:today, slot:'shushoku'});
+    if (s) newHistoryEntries.push({id:s.id, date:today, slot:'shusai'});
+    if (f) newHistoryEntries.push({id:f.id, date:today, slot:'fukusai'});
+    if (sh) newHistoryEntries.push({id:sh.id, date:today, slot:'shirumono'});
   }
+  recipeHistory.push(...newHistoryEntries);
   saveState(); renderWeekBoard(); updateNutrition();
-  showToast('週間献立を自動生成しました（ホットクックは1日1品まで）');
+  showToast('週間献立を自動生成しました');
 }
 
 function clearWeekPlan() {
@@ -1213,7 +1459,7 @@ function renderDirectRecipePicker() {
   list.innerHTML = filtered.map(r => {
     const isSelected = directSelectedRecipes.some(s => s.id === r.id);
     const catIcon = r.category?.includes('主菜') ? '🥩' : r.category?.includes('副菜') ? '🥗' : r.category?.includes('汁') || r.category?.includes('鍋') || r.category?.includes('スープ') ? '🍲' : '🍽️';
-    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;border-bottom:1px solid var(--border);background:${isSelected?'rgba(74,124,89,.08)':'transparent'}"
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;border-bottom:1px solid var(--border);background:${isSelected?'rgba(138,154,123,.08)':'transparent'}"
       onclick="toggleDirectRecipe('${r.id}')">
       <span style="font-size:1.1rem">${isSelected ? '✅' : '⬜'}</span>
       <span style="font-size:.85rem">${catIcon} <strong>${r.title}</strong></span>
@@ -1368,7 +1614,7 @@ function renderWeekSummary() {
   const maxActive = Math.max(...sorted.map(s => s.activeTime), 1);
   const maxTotal  = Math.max(...sorted.map(s => s.totalTime), 1);
 
-  const dayColors = ['#e8a838','#4a7c59','#2980b9','#8e44ad','#e67e22','#3498db','#c0392b'];
+  const dayColors = ['#c9a96e','#8a9a7b','#7a9aad','#a08aad','#c9a06a','#7aad9a','#c4877a'];
 
   const cards = sorted.map((s, idx) => {
     const rankClass = idx === 0 && (sortKey === 'active-asc' || sortKey === 'total-asc' || sortKey === 'saving-desc') ? 'rank-1' : '';
@@ -1424,8 +1670,16 @@ function renderRecipeList() {
   const q = (document.getElementById('recipe-search')?.value || '').toLowerCase();
 
   let filtered = all;
-  if (currentSourceFilter !== 'all') filtered = filtered.filter(r => r.source === currentSourceFilter);
-  if (currentCategoryFilter !== 'all') filtered = filtered.filter(r => normalizeCategory(r.category) === currentCategoryFilter);
+  if (currentSourceFilter === 'fav') {
+    filtered = filtered.filter(r => favRecipes.has(r.id));
+  } else if (currentSourceFilter !== 'all') {
+    filtered = filtered.filter(r => r.source === currentSourceFilter);
+  }
+  if (currentCategoryFilter === 'seasonal') {
+    filtered = filtered.filter(r => isSeasonalRecipe(r));
+  } else if (currentCategoryFilter !== 'all') {
+    filtered = filtered.filter(r => normalizeCategory(r.category) === currentCategoryFilter);
+  }
   if (q) filtered = filtered.filter(r =>
     r.title.toLowerCase().includes(q) || r.desc?.toLowerCase().includes(q) ||
     (r.tags||[]).some(t => t.toLowerCase().includes(q))
@@ -1441,11 +1695,17 @@ function renderRecipeList() {
     const catNorm = normalizeCategory(r.category);
     const srcLabel = SOURCE_LABELS[r.source] || r.source;
     const srcTagClass = ['kagome','ajinomoto','kikkoman','shirogohan'].includes(r.source) ? `src-${r.source}` : '';
-    const siteLink = r.siteUrl ? `<a href="${r.siteUrl}" target="_blank" rel="noopener" class="site-link" onclick="event.stopPropagation()">🔗 ${r.siteName}で見る ↗</a>` : '';
+    const siteLink = r.siteUrl ? `<a href="${r.siteUrl}" target="_blank" rel="noopener" class="site-link" onclick="event.stopPropagation()">🔗 ${r.siteName}で見る</a>` : '';
     const isNG = ngRecipes.has(r.id);
-    return `<div class="recipe-card${isNG ? ' ng-recipe' : ''}" onclick="showRecipeDetail('${r.id}')">
+    const isFav = favRecipes.has(r.id);
+    const isSeasonal = isSeasonalRecipe(r);
+    const daysAgo = getRecipeHistoryDaysAgo(r.id);
+    const historyLabel = daysAgo >= 0 && daysAgo <= 30 ? `<span class="history-badge">前回: ${daysAgo}日前</span>` : '';
+    const seasonalLabel = isSeasonal ? '<span class="seasonal-badge">旬</span>' : '';
+    return `<div class="recipe-card${isNG ? ' ng-recipe' : ''}${isFav ? ' fav-recipe' : ''}" onclick="showRecipeDetail('${r.id}')">
       <div style="display:flex;align-items:center;gap:6px">
-        <div class="recipe-title" style="flex:1">${isNG ? '🚫 ' : ''}${r.title}</div>
+        <div class="recipe-title" style="flex:1">${isNG ? '🚫 ' : ''}${r.title}${seasonalLabel}${historyLabel}</div>
+        <button class="btn-fav${isFav ? ' active' : ''}" onclick="event.stopPropagation();toggleFav('${r.id}')" title="お気に入り">${isFav ? '⭐' : '☆'}</button>
         <button class="btn btn-sm ${isNG ? 'btn-danger' : 'btn-outline'}" onclick="event.stopPropagation();toggleNG('${r.id}')" style="font-size:.7rem;padding:3px 8px;white-space:nowrap" title="自動生成から除外/復帰">${isNG ? 'NG解除' : 'NG'}</button>
       </div>
       <div class="recipe-meta">
@@ -1470,6 +1730,12 @@ function toggleNG(id) {
   saveState(); renderRecipeList();
 }
 
+function toggleFav(id) {
+  if (favRecipes.has(id)) favRecipes.delete(id);
+  else favRecipes.add(id);
+  saveState(); renderRecipeList();
+}
+
 function filterRecipes() { renderRecipeList(); }
 function filterBySource(src, btn) {
   currentSourceFilter = src;
@@ -1479,15 +1745,26 @@ function filterBySource(src, btn) {
     b.style.color = '';
   });
   btn.classList.add('active');
-  if (src !== 'all' && SOURCE_COLORS[src]) {
+  if (src === 'fav') {
+    btn.style.background = 'var(--fav-gold)';
+    btn.style.color = 'white';
+  } else if (src !== 'all' && SOURCE_COLORS[src]) {
     btn.style.background = SOURCE_COLORS[src].replace('var(','').replace(')','');
   }
   renderRecipeList();
 }
 function filterByCategory(cat, btn) {
   currentCategoryFilter = cat;
-  document.querySelectorAll('#category-filters .btn-outline').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#category-filters .btn-outline').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '';
+    b.style.color = '';
+  });
   btn.classList.add('active');
+  if (cat === 'seasonal') {
+    btn.style.background = 'var(--seasonal)';
+    btn.style.color = 'white';
+  }
   renderRecipeList();
 }
 
@@ -1505,12 +1782,20 @@ function showRecipeDetail(id) {
   const steps = (r.steps||[]).map(s => typeof s === 'string' ? s : s.text);
   const siteLink = r.siteUrl ? `<a href="${r.siteUrl}" target="_blank" rel="noopener" class="site-link" style="font-size:.85rem">🔗 ${r.siteName}でレシピを見る ↗</a>` : '';
 
+  const isFavDetail = favRecipes.has(r.id);
+  const isSeasonalDetail = isSeasonalRecipe(r);
+  const daysAgoDetail = getRecipeHistoryDaysAgo(r.id);
   document.getElementById('detail-content').innerHTML = `
-    <h2 style="font-size:1.1rem;margin-bottom:8px">${r.title}</h2>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <h2 style="font-size:1.1rem;flex:1;font-weight:500">${r.title}</h2>
+      ${isSeasonalDetail ? '<span class="seasonal-badge" style="font-size:.75rem">🌿 旬</span>' : ''}
+      <button class="btn-fav${isFavDetail ? ' active' : ''}" onclick="toggleFav('${r.id}');showRecipeDetail('${r.id}')" style="font-size:1.3rem">${isFavDetail ? '⭐' : '☆'}</button>
+    </div>
     <div class="recipe-meta" style="margin-bottom:10px">
       <span class="recipe-tag cat">${cat}</span>
       <span class="recipe-tag time">${r.cookTime||'?'}分</span>
       ${(r.tags||[]).map(t=>`<span class="recipe-tag">${t}</span>`).join('')}
+      ${daysAgoDetail >= 0 && daysAgoDetail <= 30 ? `<span class="history-badge">前回: ${daysAgoDetail}日前</span>` : ''}
     </div>
     <p style="font-size:.88rem;color:var(--text-light);margin-bottom:14px;line-height:1.5">${r.desc||''}</p>
     ${siteLink ? `<div style="margin-bottom:14px">${siteLink}</div>` : ''}
@@ -1902,6 +2187,7 @@ function generateTimelineFromRecipes(recipes, title) {
 
   // V3 スケジューリング
   cookingTimeline = scheduleStepsV3(steps, recipes);
+  nowStepIndex = 0;
 
   computeEfficiency(recipes);
   renderTimeline();
@@ -2118,13 +2404,14 @@ function computeEfficiency(recipes) {
 // タイムライン描画
 // ============================
 const RECIPE_COLORS = [
-  '#4a7c59','#d4783c','#c0392b','#8e44ad','#2980b9',
-  '#16a085','#d4a017','#7f3c8d','#3c6478','#e67e22'
+  '#8a9a7b','#c4987a','#c4877a','#a08aad','#7a9aad',
+  '#7aad9a','#c9a96e','#ad7a9a','#7a8a9a','#c49a6e'
 ];
 
 function renderTimeline() {
   if (!cookingTimeline || cookingTimeline.length === 0) return;
   if (currentTimelineView === 'list') renderStepList();
+  else if (currentTimelineView === 'now') renderNowMode();
   else renderGantt();
 }
 
@@ -2267,8 +2554,8 @@ function renderStepList() {
   const cards = sorted.map(s => {
     const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
     const isParallel = tl.some(o => o !== s && o.startTime < s.startTime + s.duration && o.startTime + o.duration > s.startTime);
-    const passiveTag = s.passive ? '<span class="step-parallel-tag" style="background:rgba(41,128,185,.15);color:#2980b9">⏳ 放置OK</span>' : '<span class="step-parallel-tag" style="background:rgba(192,57,43,.1);color:#c0392b">🖐 手を使う</span>';
-    const prepTag = s.isPreStep ? `<span class="step-parallel-tag" style="background:rgba(232,168,56,.15);color:#b8860b">${s.prepTag || '🔧 下ごしらえ'}</span>` : '';
+    const passiveTag = s.passive ? '<span class="step-parallel-tag" style="background:rgba(122,154,173,.12);color:#7a9aad">⏳ 放置OK</span>' : '<span class="step-parallel-tag" style="background:rgba(196,135,122,.1);color:#c4877a">🖐 手を使う</span>';
+    const prepTag = s.isPreStep ? `<span class="step-parallel-tag" style="background:rgba(201,169,110,.15);color:#a08a5a">${s.prepTag || '🔧 下ごしらえ'}</span>` : '';
     return `<div class="step-card ${isParallel?'parallel-indicator':''}" style="border-left-color:${color}">
       <div class="step-time-badge" style="background:${color}">
         <span class="t-start">${s.startTime}分</span>
@@ -2287,6 +2574,153 @@ function renderStepList() {
 
   container.innerHTML = `<div class="step-list-title">調理手順（時系列）— 合計 約${maxTime}分</div>
     <div>${cards}</div>`;
+}
+
+// ============================
+// NOWモード（ガイド付き調理）
+// ============================
+function getNowActiveSteps() {
+  if (!cookingTimeline) return []
+  const sorted = [...cookingTimeline].sort((a,b) => a.startTime - b.startTime || a.resource.localeCompare(b.resource))
+  return sorted.filter(s => !s.passive)
+}
+
+function renderNowMode() {
+  const container = document.getElementById('timeline-container')
+  const tl = cookingTimeline
+  if (!tl || tl.length === 0) return
+
+  const activeSteps = getNowActiveSteps()
+  const allSorted = [...tl].sort((a,b) => a.startTime - b.startTime)
+  const recipes = [...new Set(tl.map(s => s.recipeName))]
+
+  if (activeSteps.length === 0) {
+    container.innerHTML = '<div class="now-container"><div class="now-complete-msg">手動ステップがありません</div></div>'
+    return
+  }
+
+  // Clamp index
+  if (nowStepIndex < 0) nowStepIndex = 0
+  if (nowStepIndex >= activeSteps.length) {
+    container.innerHTML = `<div class="now-container">
+      <div class="now-progress">${activeSteps.map(() => '<div class="dot done"></div>').join('')}</div>
+      <div class="now-complete-msg">🎉 すべてのステップが完了しました！</div>
+      <div class="now-nav"><button onclick="nowPrev()">← 前へ</button></div>
+    </div>`
+    return
+  }
+
+  const step = activeSteps[nowStepIndex]
+  const color = RECIPE_COLORS[recipes.indexOf(step.recipeName) % RECIPE_COLORS.length]
+
+  // Progress dots
+  const dots = activeSteps.map((_, i) => {
+    const cls = i < nowStepIndex ? 'dot done' : i === nowStepIndex ? 'dot current' : 'dot'
+    return `<div class="${cls}"></div>`
+  }).join('')
+
+  // Cognitive load: count all overlapping steps at current step's time window
+  const stepStart = step.startTime
+  const stepEnd = step.startTime + step.duration
+  const overlapping = allSorted.filter(s => s.startTime < stepEnd && s.startTime + s.duration > stepStart)
+  const activeOverlap = overlapping.filter(s => !s.passive).length
+  let loadClass, loadLabel
+  if (activeOverlap <= 1) { loadClass = 'load-low'; loadLabel = '🟢 余裕' }
+  else if (activeOverlap === 2) { loadClass = 'load-mid'; loadLabel = '🟡 やや忙しい' }
+  else { loadClass = 'load-high'; loadLabel = '🔴 集中！' }
+
+  // Visual timer SVG (circumference = 2 * PI * 50 ≈ 314)
+  const circumference = 314
+  const durationSec = step.duration * 60
+  const minutes = Math.floor(step.duration)
+  const timerDisplay = `${minutes}:00`
+
+  // Background tasks: passive steps running at this step's start time
+  const bgTasks = allSorted.filter(s =>
+    s.passive && s.startTime < stepEnd && s.startTime + s.duration > stepStart
+  )
+  let bgHtml = ''
+  if (bgTasks.length > 0) {
+    const items = bgTasks.map(s => {
+      const remaining = Math.max(0, (s.startTime + s.duration) - stepStart)
+      return `<div class="now-bg-task-item">
+        <span>⏳ ${s.resource}: ${s.recipeName} — ${s.text}</span>
+        <span class="remaining">残り ${remaining}分</span>
+      </div>`
+    }).join('')
+    bgHtml = `<div class="now-bg-tasks">
+      <div class="section-title">裏で進行中</div>
+      ${items}
+    </div>`
+  }
+
+  // Transition prompt: next active step info
+  let transHtml = ''
+  if (nowStepIndex < activeSteps.length - 1) {
+    const next = activeSteps[nowStepIndex + 1]
+    const nextColor = RECIPE_COLORS[recipes.indexOf(next.recipeName) % RECIPE_COLORS.length]
+    const lines = []
+    if (step.resource !== next.resource) {
+      lines.push(`<div class="transition-line">📍 ${step.resource} → ${next.resource}</div>`)
+    }
+    if (step.recipeName !== next.recipeName) {
+      lines.push(`<div class="transition-line">🔀 ${step.recipeName} → ${next.recipeName}へ</div>`)
+    }
+    lines.push(`<div class="transition-line" style="color:${nextColor};font-weight:500">${next.text}</div>`)
+    transHtml = `<div class="now-transition">
+      <div class="section-title">次のステップ</div>
+      ${lines.join('')}
+    </div>`
+  }
+
+  // Navigation
+  const prevDisabled = nowStepIndex <= 0 ? 'disabled' : ''
+  const isLast = nowStepIndex >= activeSteps.length - 1
+
+  container.innerHTML = `<div class="now-container">
+    <div class="now-progress">${dots}</div>
+    <div class="now-step-count">ステップ ${nowStepIndex + 1}/${activeSteps.length}</div>
+    <div class="now-load ${loadClass}">${loadLabel}</div>
+    <div class="now-card">
+      <div class="now-recipe">
+        <span class="color-dot" style="background:${color}"></span>
+        ${step.recipeName}
+      </div>
+      <div class="now-text">${step.text}</div>
+      <div class="now-meta">
+        <span class="badge">📍 ${step.resource}</span>
+        <span class="badge">⏱ ${step.duration}分</span>
+        ${step.isPreStep ? `<span class="badge">${step.prepTag || '🔧 下ごしらえ'}</span>` : ''}
+      </div>
+      <div class="now-timer-ring">
+        <svg viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="50"/>
+          <circle class="ring-fg" cx="60" cy="60" r="50"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="0"
+            style="animation:nowTimer ${durationSec}s linear forwards"/>
+        </svg>
+        <div class="now-timer-label">${timerDisplay}</div>
+      </div>
+    </div>
+    ${bgHtml}
+    ${transHtml}
+    <div class="now-nav">
+      <button onclick="nowPrev()" ${prevDisabled}>← 前へ</button>
+      <button class="primary-nav" onclick="nowNext()">${isLast ? '🎉 完了！' : '✅ 完了 → 次へ'}</button>
+    </div>
+  </div>`
+}
+
+function nowNext() {
+  const activeSteps = getNowActiveSteps()
+  nowStepIndex = Math.min(nowStepIndex + 1, activeSteps.length)
+  renderNowMode()
+}
+
+function nowPrev() {
+  nowStepIndex = Math.max(nowStepIndex - 1, 0)
+  renderNowMode()
 }
 
 // ============================
@@ -2473,7 +2907,7 @@ function updateNutrition() {
   });
 
   const labels = {protein:'タンパク質', vegetable:'野菜・食物繊維', carb:'炭水化物', other:'その他（乳製品等）'};
-  const colors = {protein:'#e74c3c', vegetable:'#27ae60', carb:'#f39c12', other:'#3498db'};
+  const colors = {protein:'#c4877a', vegetable:'#8aad7a', carb:'#c9a96e', other:'#7a9aad'};
   const maxVal = scope === 'week' ? 28 : 4;
   const idealMin = scope === 'week' ? 10 : 1.5;
 
@@ -2559,9 +2993,9 @@ function drawRadarChart(totals, maxVal, labels, colors) {
     i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
   });
   ctx.closePath();
-  ctx.fillStyle = 'rgba(74,124,89,.2)';
+  ctx.fillStyle = 'rgba(138,154,123,.2)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(74,124,89,.8)';
+  ctx.strokeStyle = 'rgba(138,154,123,.8)';
   ctx.lineWidth = 2;
   ctx.stroke();
 
@@ -2621,6 +3055,44 @@ async function sendToNotion() {
 // ============================
 function openSettings() { document.getElementById('settings-modal').classList.add('show'); }
 function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
+
+// ============================
+// ダークモード
+// ============================
+function initTheme() {
+  const saved = localStorage.getItem('v3_theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  updateThemeIcon();
+  // システム設定変更を監視
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('v3_theme')) {
+      document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+      updateThemeIcon();
+    }
+  });
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('v3_theme', next);
+  updateThemeIcon();
+  // テーマカラーmetaを更新
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = next === 'dark' ? '#1c1b1f' : '#8a9a7b';
+}
+function updateThemeIcon() {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  btn.textContent = isDark ? '☀️' : '🌙';
+}
+// テーマは最初に初期化（DOMContentLoaded前でも実行）
+initTheme();
 </script>
 </body>
 </html>
