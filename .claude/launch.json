@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "献立プランナー",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8095"],
+      "port": 8095,
+      "cwd": "/Users/mayuko/Library/Mobile Documents/com~apple~CloudDocs/献立アプリ"
+    }
+  ]
+}
