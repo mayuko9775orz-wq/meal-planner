@@ -829,6 +829,14 @@
   </div>
 </div>
 
+<!-- ===== ガントブロック詳細モーダル ===== -->
+<div id="gantt-detail-modal" class="modal" onclick="if(event.target===this)closeGanttDetail()">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeGanttDetail()">✕</button>
+    <div id="gantt-detail-content"></div>
+  </div>
+</div>
+
 <!-- ===== スロット追加モーダル ===== -->
 <div id="slot-modal" class="modal">
   <div class="modal-content">
@@ -2647,7 +2655,7 @@ function computeEfficiency(recipes) {
     </div>
     <div class="efficiency-stat">
       <div class="stat-label">時短効果</div>
-      <div class="stat-value" style="color:var(--success)">${savedTime > 0 ? '-'+savedTime+'分' : '0分'}</div>
+      <div class="stat-value" style="color:var(--success)">${savedTime > 0 ? '▲'+savedTime+'分' : '0分'}</div>
       <div class="stat-sub">${savedPct > 0 ? savedPct+'%短縮' : ''}</div>
     </div>
     <div class="efficiency-stat">
@@ -2695,11 +2703,19 @@ function toggleTimelineView(view, btn) {
   if (cookingTimeline) renderTimeline();
 }
 
+let ganttStepRegistry = [];
+function registerGanttStep(step, extra) {
+  const idx = ganttStepRegistry.length;
+  ganttStepRegistry.push({...step, ...extra});
+  return idx;
+}
+
 function renderGantt() {
   const tl = cookingTimeline;
   const container = document.getElementById('timeline-container');
   const maxTime = Math.max(...tl.map(s => s.startTime + s.duration));
   const recipes = [...new Set(tl.map(s => s.recipeName))];
+  ganttStepRegistry = [];
 
   // 料理人の行を構築（アクティブなステップのみ — パッシブ手作業は含めない）
   const cookSteps = tl.filter(s => {
@@ -2751,8 +2767,9 @@ function renderGantt() {
       const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
       const prepLabel = s.isPreStep ? `${s.prepTag||'下ごしらえ'} ` : '';
       const prepBorder = s.isPreStep ? 'border:2px dashed rgba(255,255,255,.5);' : '';
-      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${prepBorder}"
-        title="${s.recipeName}\n${prepLabel}${s.text}\n${s.startTime}分〜${s.startTime+s.duration}分（${s.duration}分間）\n${s.isPreStep?'⚡ 自動追加された下ごしらえ\n':''}${s.passive?'放置OK — 他の作業ができます':'手を使います'}">
+      const idx = registerGanttStep(s, {rowLabel: '👩‍🍳 料理人', color});
+      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${prepBorder}" onclick="showGanttDetail(${idx})"
+        title="タップで詳細 — ${s.recipeName}">
         <span class="gantt-block-title">${prepLabel}${s.recipeName}</span>
         <span class="gantt-block-desc">${s.text}</span>
         <span class="gantt-block-time">${s.startTime}〜${s.startTime+s.duration}分</span>
@@ -2772,9 +2789,9 @@ function renderGantt() {
       const width = Math.max((s.duration / maxTime) * 100, 1.5);
       const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
       const passiveStyle = s.passive ? 'opacity:.55;' : '';
-      const passiveIcon = s.passive ? '🔥 ' : '👩‍🍳 ';
-      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${passiveStyle}"
-        title="${s.recipeName}\n${passiveIcon}${s.text}\n${s.startTime}分〜${s.startTime+s.duration}分（${s.duration}分間）\n${s.passive?'⏳ 放置OK — 料理人フリー':'🖐 手を使って調理中'}">
+      const idx = registerGanttStep(s, {rowLabel: resource, color});
+      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${passiveStyle}" onclick="showGanttDetail(${idx})"
+        title="タップで詳細 — ${s.recipeName}">
         <span class="gantt-block-title">${s.passive?'🔥':'👩‍🍳'} ${s.recipeName}</span>
         <span class="gantt-block-desc">${s.text}</span>
         <span class="gantt-block-time">${s.startTime}〜${s.startTime+s.duration}分</span>
@@ -2795,8 +2812,9 @@ function renderGantt() {
       const left = (s.startTime / maxTime) * 100;
       const width = Math.max((s.duration / maxTime) * 100, 1.5);
       const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
-      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};opacity:.55;border:2px dashed rgba(255,255,255,.5)"
-        title="${s.recipeName}\n${s.prepTag||''} ${s.text}\n${s.startTime}分〜${s.startTime+s.duration}分（${s.duration}分間）\n⏳ 放置OK — セットするだけ">
+      const idx = registerGanttStep(s, {rowLabel: '⏳ 放置', color});
+      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};opacity:.55;border:2px dashed rgba(255,255,255,.5)" onclick="showGanttDetail(${idx})"
+        title="タップで詳細 — ${s.recipeName}">
         <span class="gantt-block-title">${s.prepTag||'⏳'} ${s.recipeName}</span>
         <span class="gantt-block-desc">${s.text}</span>
         <span class="gantt-block-time">${s.startTime}〜${s.startTime+s.duration}分</span>
@@ -2815,6 +2833,43 @@ function renderGantt() {
       ${passiveHandRow}
     </div>
   </div>`;
+}
+
+function showGanttDetail(idx) {
+  const s = ganttStepRegistry[idx];
+  if (!s) return;
+  const endTime = s.startTime + s.duration;
+  const stateChip = s.passive
+    ? '<span style="background:rgba(122,154,173,.15);color:#5a7a8d;padding:3px 10px;border-radius:10px;font-size:.75rem">⏳ 放置OK — 手が空きます</span>'
+    : '<span style="background:rgba(196,135,122,.15);color:#a86858;padding:3px 10px;border-radius:10px;font-size:.75rem">🖐 手を使って調理</span>';
+  const prepChip = s.isPreStep
+    ? `<span style="background:rgba(201,169,110,.15);color:#8a7038;padding:3px 10px;border-radius:10px;font-size:.75rem;margin-left:6px">⚡ ${s.prepTag||'下ごしらえ'}</span>`
+    : '';
+  const rowChip = s.rowLabel
+    ? `<span style="background:rgba(0,0,0,.05);color:var(--text-light);padding:3px 10px;border-radius:10px;font-size:.75rem;margin-left:6px">${s.rowLabel}</span>`
+    : '';
+  const content = document.getElementById('gantt-detail-content');
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:14px;height:14px;border-radius:4px;background:${s.color||'#888'}"></div>
+      <div style="font-weight:700;font-size:1.05rem;color:var(--text)">${s.recipeName||'（調理ステップ）'}</div>
+    </div>
+    <div style="margin-bottom:14px">${stateChip}${prepChip}${rowChip}</div>
+    <div style="background:var(--bg);padding:12px 14px;border-radius:12px;margin-bottom:14px;line-height:1.6;color:var(--text)">
+      ${s.text||'—'}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
+      <div><div style="font-size:.7rem;color:var(--text-light)">開始</div><div style="font-weight:700;color:var(--text)">${s.startTime}分</div></div>
+      <div><div style="font-size:.7rem;color:var(--text-light)">終了</div><div style="font-weight:700;color:var(--text)">${endTime}分</div></div>
+      <div><div style="font-size:.7rem;color:var(--text-light)">所要</div><div style="font-weight:700;color:var(--text)">${s.duration}分間</div></div>
+    </div>
+    ${s.isPreStep ? '<div style="margin-top:14px;font-size:.8rem;color:var(--text-light);background:rgba(201,169,110,.08);padding:10px 12px;border-radius:10px">⚡ これは調理をスムーズにするために自動追加された下ごしらえステップです</div>' : ''}
+  `;
+  document.getElementById('gantt-detail-modal').classList.add('show');
+}
+
+function closeGanttDetail() {
+  document.getElementById('gantt-detail-modal').classList.remove('show');
 }
 
 function renderStepList() {
@@ -3184,13 +3239,26 @@ function updateNutrition() {
   const maxVal = scope === 'week' ? 28 : 4;
   const idealMin = scope === 'week' ? 10 : 1.5;
 
+  const suggestions = {
+    protein: ['ゆで卵1個', '納豆1パック', 'ギリシャヨーグルト', 'サラダチキン', '豆腐半丁', 'チーズ1切れ'],
+    vegetable: ['ミニトマト3個', 'カット野菜サラダ', '冷凍ブロッコリー', 'バナナ1本', 'オートミール', 'わかめスープ'],
+    carb: ['おにぎり1個', 'バナナ1本', 'シリアル', '全粒粉トースト'],
+    other: ['ヨーグルト', '牛乳コップ1杯', 'チーズ1切れ', '豆乳']
+  };
+
   const alertsEl = document.getElementById('nutrition-alerts');
   let alerts = '';
   if (recipes.length === 0) {
     alerts = '<div class="nutrition-alert warn">献立にレシピを追加すると栄養バランスが表示されます</div>';
   } else {
     Object.keys(totals).forEach(key => {
-      if (totals[key] < idealMin) alerts += `<div class="nutrition-alert warn">${labels[key]}が少なめです</div>`;
+      if (totals[key] < idealMin) {
+        const picks = suggestions[key].slice(0, 3).join('・');
+        alerts += `<div class="nutrition-alert warn">
+          <div style="font-weight:600">⚠️ ${labels[key]}が少なめです</div>
+          <div style="margin-top:4px;font-size:.82rem;opacity:.85">💡 プラス1品に: ${picks} などがおすすめ</div>
+        </div>`;
+      }
     });
     if (!alerts) alerts = '<div class="nutrition-alert good">バランスが良好です</div>';
   }
@@ -3223,7 +3291,7 @@ function drawRadarChart(totals, maxVal, labels, colors) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  const cx = W/2, cy = H/2, radius = Math.min(W,H)/2 - 40;
+  const cx = W/2, cy = H/2, radius = Math.min(W,H)/2 - 60;
 
   ctx.clearRect(0, 0, W, H);
 
@@ -3251,9 +3319,12 @@ function drawRadarChart(totals, maxVal, labels, colors) {
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y);
     ctx.strokeStyle = 'rgba(0,0,0,.1)'; ctx.stroke();
 
-    const lx = cx + Math.cos(angle) * (radius + 22);
-    const ly = cy + Math.sin(angle) * (radius + 22);
-    ctx.fillStyle = '#555'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lx = cx + Math.cos(angle) * (radius + 18);
+    const ly = cy + Math.sin(angle) * (radius + 18);
+    const cosA = Math.cos(angle), sinA = Math.sin(angle);
+    ctx.fillStyle = '#555'; ctx.font = '11px sans-serif';
+    ctx.textAlign = Math.abs(cosA) < 0.3 ? 'center' : (cosA > 0 ? 'left' : 'right');
+    ctx.textBaseline = Math.abs(sinA) < 0.3 ? 'middle' : (sinA > 0 ? 'top' : 'bottom');
     ctx.fillText(labels[key], lx, ly);
   });
 
