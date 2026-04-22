@@ -907,6 +907,23 @@
       <input type="checkbox" id="affiliate-disabled" style="width:auto;margin:0">
       🚫 リンクを一切表示しない(プライバシーモード)
     </label>
+
+    <h4 style="margin:20px 0 8px;font-size:.85rem">🍱 宅配サービスの提案リンク(任意)</h4>
+    <div style="font-size:.72rem;color:var(--text-light);margin-bottom:8px;line-height:1.5">
+      「がんばらない日」や献立が空の日に、さりげなく提案カードを表示します。<br>
+      もしもアフィリエイト等で発行したURLを貼ると、アフィリエイトリンクになります。
+    </div>
+    <label>🍱 宅配弁当(ナッシュ等)のリンクURL</label>
+    <input type="text" id="nosh-url" placeholder="https://... (空欄で nosh.jp にリンク)">
+    <label>🥬 ミールキット(Oisix等)のリンクURL</label>
+    <input type="text" id="oisix-url" placeholder="https://... (空欄で oisix.com にリンク)">
+    <label>🍲 つくりおきサービスのリンクURL</label>
+    <input type="text" id="tsukurioki-url" placeholder="https://... (空欄で tsukurioki.jp にリンク)">
+    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-weight:normal">
+      <input type="checkbox" id="mealkit-cards-disabled" style="width:auto;margin:0">
+      📴 宅配提案カードを表示しない
+    </label>
+
     <button class="btn" onclick="saveAffiliateSettings()" style="width:100%;margin-top:12px">保存</button>
   </div>
 </div>
@@ -943,7 +960,7 @@ let favRecipes = new Set(); // お気に入りレシピ
 let recipeHistory = []; // レシピ使用履歴 [{id, date, slot}, ...]
 let slotSourceFilter = 'all';
 let cookingMode = 'normal'; // 'normal' | 'limit' | 'challenge'
-let affiliateSettings = {rakutenId:'', amazonTag:'', disabled:false};
+let affiliateSettings = {rakutenId:'', amazonTag:'', disabled:false, noshUrl:'', oisixUrl:'', tsukuriokiUrl:'', mealkitDisabled:false};
 
 // ============================
 // 旬の食材マップ
@@ -1340,22 +1357,30 @@ function saveAffiliateSettings() {
   affiliateSettings = {
     rakutenId: (document.getElementById('rakuten-affiliate-id').value || '').trim(),
     amazonTag: (document.getElementById('amazon-associate-tag').value || '').trim(),
-    disabled: document.getElementById('affiliate-disabled').checked
+    disabled: document.getElementById('affiliate-disabled').checked,
+    noshUrl: (document.getElementById('nosh-url').value || '').trim(),
+    oisixUrl: (document.getElementById('oisix-url').value || '').trim(),
+    tsukuriokiUrl: (document.getElementById('tsukurioki-url').value || '').trim(),
+    mealkitDisabled: document.getElementById('mealkit-cards-disabled').checked
   };
   localStorage.setItem('v3_affiliate', JSON.stringify(affiliateSettings));
   showToast('アフィリエイト設定を保存しました');
   closeSettings();
   renderRecipeList();
   updateShoppingDisplay();
+  renderTodayBoard();
 }
 
 function loadAffiliateUI() {
-  const r = document.getElementById('rakuten-affiliate-id');
-  const a = document.getElementById('amazon-associate-tag');
-  const d = document.getElementById('affiliate-disabled');
-  if (r) r.value = affiliateSettings.rakutenId || '';
-  if (a) a.value = affiliateSettings.amazonTag || '';
-  if (d) d.checked = !!affiliateSettings.disabled;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  const check = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+  set('rakuten-affiliate-id', affiliateSettings.rakutenId);
+  set('amazon-associate-tag', affiliateSettings.amazonTag);
+  check('affiliate-disabled', affiliateSettings.disabled);
+  set('nosh-url', affiliateSettings.noshUrl);
+  set('oisix-url', affiliateSettings.oisixUrl);
+  set('tsukurioki-url', affiliateSettings.tsukuriokiUrl);
+  check('mealkit-cards-disabled', affiliateSettings.mealkitDisabled);
 }
 
 // 材料名からアフィリエイト検索URLを生成
@@ -1385,6 +1410,72 @@ function getAffiliateLinks(itemName) {
 
 function hasActiveAffiliate() {
   return !affiliateSettings.disabled && (affiliateSettings.rakutenId || affiliateSettings.amazonTag);
+}
+
+// 宅配サービス提案カード（コンテキスト別に最適なサービスを1〜2個提示）
+function renderMealKitCard(context) {
+  if (affiliateSettings.disabled || affiliateSettings.mealkitDisabled) return '';
+
+  const services = {
+    nosh: {
+      label: '🍱 ナッシュ',
+      desc: 'レンジで温めるだけの冷凍弁当',
+      url: affiliateSettings.noshUrl || 'https://nosh.jp/',
+      sponsored: !!affiliateSettings.noshUrl
+    },
+    oisix: {
+      label: '🥬 Oisix',
+      desc: '野菜がカット済のミールキット',
+      url: affiliateSettings.oisixUrl || 'https://www.oisix.com/',
+      sponsored: !!affiliateSettings.oisixUrl
+    },
+    tsukurioki: {
+      label: '🍲 つくりおき.jp',
+      desc: '1週間分のおかずを届けてくれる',
+      url: affiliateSettings.tsukuriokiUrl || 'https://tsukurioki.jp/',
+      sponsored: !!affiliateSettings.tsukuriokiUrl
+    }
+  };
+
+  // コンテキストによって出すサービスを選ぶ
+  let picks = [];
+  let title = '';
+  let subtitle = '';
+  if (context === 'limit') {
+    title = '料理もしんどい日は…';
+    subtitle = '今日はこれでもOK。ひとやすみの選択肢。';
+    picks = ['nosh', 'tsukurioki'];
+  } else if (context === 'empty') {
+    title = '献立が決まらない日は…';
+    subtitle = 'さっと決めて、さっと食べる日があってもいい。';
+    picks = ['nosh', 'oisix'];
+  } else if (context === 'shopping') {
+    title = 'まとめて宅配で済ませる?';
+    subtitle = 'スーパーに行く気力がない日の選択肢。';
+    picks = ['oisix', 'tsukurioki'];
+  } else {
+    return '';
+  }
+
+  const cards = picks.map(key => {
+    const s = services[key];
+    const sponsoredTag = s.sponsored
+      ? '<span style="font-size:.62rem;opacity:.5;margin-left:4px">PR</span>'
+      : '';
+    return `<a href="${s.url}" target="_blank" rel="noopener noreferrer${s.sponsored?' sponsored':''}" style="display:block;padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--border);text-decoration:none;color:var(--text);transition:transform .15s">
+      <div style="font-weight:600;font-size:.88rem">${s.label}${sponsoredTag}</div>
+      <div style="font-size:.75rem;color:var(--text-light);margin-top:2px">${s.desc}</div>
+    </a>`;
+  }).join('');
+
+  return `<div class="mealkit-card" style="margin-top:12px;padding:14px;border-radius:14px;background:rgba(138,154,123,.05);border:1px dashed var(--border)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <div style="font-size:.88rem;font-weight:600;flex:1">${title}</div>
+      <button onclick="this.closest('.mealkit-card').style.display='none'" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:1rem;padding:0 4px" title="閉じる">✕</button>
+    </div>
+    <div style="font-size:.75rem;color:var(--text-light);margin-bottom:10px">${subtitle}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${cards}</div>
+  </div>`;
 }
 
 // 調理モード切替
@@ -2002,6 +2093,13 @@ function renderTodayBoard() {
       <div class="info-item">🍽 <strong>${recipeCount}品</strong></div>
       <div class="info-item">⏱ 合計約 <strong>${totalTime}分</strong></div>
     </div>`;
+  }
+
+  // 宅配提案カード：がんばらない日モード or 献立が空の時
+  if (cookingMode === 'limit') {
+    html += renderMealKitCard('limit');
+  } else if (!hasAnyRecipe) {
+    html += renderMealKitCard('empty');
   }
 
   document.getElementById('today-board').innerHTML = html;
@@ -3424,7 +3522,7 @@ function updateShoppingDisplay() {
       </div>
       <button class="remove-btn" onclick="removeShoppingItem(${idx})">✕</button>
     </div>`;
-  }).join('');
+  }).join('') + renderMealKitCard('shopping');
 }
 
 // ============================
