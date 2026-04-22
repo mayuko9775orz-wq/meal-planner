@@ -885,12 +885,29 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeSettings()">✕</button>
     <div class="modal-title">⚙️ 設定</div>
+
     <h4 style="margin:16px 0 8px;font-size:.9rem">Notion連携</h4>
     <label>Integration Token</label>
     <input type="password" id="notion-token" placeholder="your_notion_integration_token">
     <label>Parent Page ID</label>
     <input type="text" id="notion-page-id" placeholder="page_id">
     <button class="btn" onclick="saveNotionSettings()" style="width:100%;margin-top:8px">保存</button>
+
+    <h4 style="margin:24px 0 8px;font-size:.9rem">🛒 アフィリエイトリンク(任意)</h4>
+    <div style="font-size:.75rem;color:var(--text-light);margin-bottom:8px;line-height:1.5">
+      材料や買い物リストから通販サイトを検索できるようになります。<br>
+      開発者支援として、登録IDを設定するとアフィリエイトリンクになります。<br>
+      <strong>完全オフ</strong>にしたい場合は「リンクを表示しない」にチェックを入れてください。
+    </div>
+    <label>楽天アフィリエイトID</label>
+    <input type="text" id="rakuten-affiliate-id" placeholder="例: 2001xxxx.xxxxxxxx.xxxxxxxx.xxxxxxxx">
+    <label>Amazonアソシエイトタグ(任意)</label>
+    <input type="text" id="amazon-associate-tag" placeholder="例: yourname-22">
+    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-weight:normal">
+      <input type="checkbox" id="affiliate-disabled" style="width:auto;margin:0">
+      🚫 リンクを一切表示しない(プライバシーモード)
+    </label>
+    <button class="btn" onclick="saveAffiliateSettings()" style="width:100%;margin-top:12px">保存</button>
   </div>
 </div>
 
@@ -926,6 +943,7 @@ let favRecipes = new Set(); // お気に入りレシピ
 let recipeHistory = []; // レシピ使用履歴 [{id, date, slot}, ...]
 let slotSourceFilter = 'all';
 let cookingMode = 'normal'; // 'normal' | 'limit' | 'challenge'
+let affiliateSettings = {rakutenId:'', amazonTag:'', disabled:false};
 
 // ============================
 // 旬の食材マップ
@@ -1310,7 +1328,63 @@ function loadState() {
     if (recipeHistory.length > 200) recipeHistory = recipeHistory.slice(-200);
     const mode = localStorage.getItem('v3_mode');
     if (mode) cookingMode = mode;
+    const aff = localStorage.getItem('v3_affiliate');
+    if (aff) affiliateSettings = {...affiliateSettings, ...JSON.parse(aff)};
   } catch(e) { console.error('loadState error', e); }
+}
+
+// ============================
+// アフィリエイトリンク
+// ============================
+function saveAffiliateSettings() {
+  affiliateSettings = {
+    rakutenId: (document.getElementById('rakuten-affiliate-id').value || '').trim(),
+    amazonTag: (document.getElementById('amazon-associate-tag').value || '').trim(),
+    disabled: document.getElementById('affiliate-disabled').checked
+  };
+  localStorage.setItem('v3_affiliate', JSON.stringify(affiliateSettings));
+  showToast('アフィリエイト設定を保存しました');
+  closeSettings();
+  renderRecipeList();
+  updateShoppingDisplay();
+}
+
+function loadAffiliateUI() {
+  const r = document.getElementById('rakuten-affiliate-id');
+  const a = document.getElementById('amazon-associate-tag');
+  const d = document.getElementById('affiliate-disabled');
+  if (r) r.value = affiliateSettings.rakutenId || '';
+  if (a) a.value = affiliateSettings.amazonTag || '';
+  if (d) d.checked = !!affiliateSettings.disabled;
+}
+
+// 材料名からアフィリエイト検索URLを生成
+function getAffiliateLinks(itemName) {
+  if (affiliateSettings.disabled) return null;
+  const name = (itemName || '').trim();
+  if (!name) return null;
+  const links = [];
+  const encoded = encodeURIComponent(name);
+  // 楽天
+  if (affiliateSettings.rakutenId) {
+    const rakutenSearch = `https://search.rakuten.co.jp/search/mall/${encoded}/`;
+    const url = `https://hb.afl.rakuten.co.jp/ichiba/${affiliateSettings.rakutenId}/?pc=${encodeURIComponent(rakutenSearch)}&m=${encodeURIComponent('https://m.rakuten.co.jp/')}`;
+    links.push({name:'楽天', url, color:'#bf0000'});
+  } else {
+    // ID未登録でも素のリンクは貼る(収益は出ない)
+    links.push({name:'楽天', url:`https://search.rakuten.co.jp/search/mall/${encoded}/`, color:'#bf0000'});
+  }
+  // Amazon
+  if (affiliateSettings.amazonTag) {
+    links.push({name:'Amazon', url:`https://www.amazon.co.jp/s?k=${encoded}&tag=${affiliateSettings.amazonTag}`, color:'#ff9900'});
+  } else {
+    links.push({name:'Amazon', url:`https://www.amazon.co.jp/s?k=${encoded}`, color:'#ff9900'});
+  }
+  return links;
+}
+
+function hasActiveAffiliate() {
+  return !affiliateSettings.disabled && (affiliateSettings.rakutenId || affiliateSettings.amazonTag);
 }
 
 // 調理モード切替
@@ -2210,7 +2284,11 @@ function showRecipeDetail(id) {
     <p style="font-size:.88rem;color:var(--text-light);margin-bottom:14px;line-height:1.5">${r.desc||''}</p>
     ${siteLink ? `<div style="margin-bottom:14px">${siteLink}</div>` : ''}
     <h4 style="font-size:.9rem;margin-bottom:6px">材料</h4>
-    <ul style="margin:0 0 14px 18px;font-size:.88rem">${ingredients.map(i=>`<li>${i.name} ${i.qty?'— '+i.qty:''}</li>`).join('')}</ul>
+    <ul style="margin:0 0 14px 18px;font-size:.88rem">${ingredients.map(i=>{
+      const links = getAffiliateLinks(i.name);
+      const linkHtml = links ? ' ' + links.map(l => `<a href="${l.url}" target="_blank" rel="noopener noreferrer sponsored" style="font-size:.7rem;color:${l.color};text-decoration:none;margin-left:4px;opacity:.7" onclick="event.stopPropagation()">${l.name}で探す</a>`).join('') : '';
+      return `<li>${i.name} ${i.qty?'— '+i.qty:''}${linkHtml}</li>`;
+    }).join('')}</ul>
     <h4 style="font-size:.9rem;margin-bottom:6px">手順</h4>
     <ol style="margin:0 0 14px 18px;font-size:.88rem;line-height:1.6">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>
   `;
@@ -3330,16 +3408,23 @@ function updateShoppingDisplay() {
 
   const sorted = [...shoppingList.entries()].sort((a,b) => a[1].checked - b[1].checked);
 
-  list.innerHTML = sorted.map(([idx, item]) => `
+  list.innerHTML = sorted.map(([idx, item]) => {
+    const links = getAffiliateLinks(item.name);
+    const linkHtml = links && !item.checked
+      ? `<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener noreferrer sponsored" style="font-size:.7rem;color:${l.color};text-decoration:none;padding:2px 8px;border-radius:8px;background:${l.color}15">🔍 ${l.name}で探す</a>`).join('')}</div>`
+      : '';
+    return `
     <div class="shopping-item ${item.checked?'checked':''}">
       <input type="checkbox" ${item.checked?'checked':''} onchange="toggleShoppingItem(${idx})">
       <div class="shopping-item-content">
         <div class="shopping-item-name">${item.name}</div>
         ${item.qty ? `<div class="shopping-item-qty">${item.qty}</div>` : ''}
         ${item.source ? `<div class="shopping-item-source">${item.source}</div>` : ''}
+        ${linkHtml}
       </div>
       <button class="remove-btn" onclick="removeShoppingItem(${idx})">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ============================
@@ -3540,7 +3625,7 @@ async function sendToNotion() {
 // ============================
 // 設定
 // ============================
-function openSettings() { document.getElementById('settings-modal').classList.add('show'); }
+function openSettings() { document.getElementById('settings-modal').classList.add('show'); loadAffiliateUI(); }
 function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
 
 // ============================
@@ -3580,6 +3665,25 @@ function updateThemeIcon() {
 }
 // テーマは最初に初期化（DOMContentLoaded前でも実行）
 initTheme();
+</script>
+
+<footer id="app-footer" style="max-width:720px;margin:40px auto 20px;padding:16px;text-align:center;font-size:.72rem;color:var(--text-light);line-height:1.7;opacity:.7">
+  <div id="affiliate-disclosure" style="display:none">
+    このサイトには楽天アフィリエイト・Amazonアソシエイト・プログラムによるリンクが含まれています。<br>
+    リンク経由のお買い物により、運営者に紹介料が支払われる場合があります。価格はリンク経由でも変わりません。<br>
+    リンクが不要な方は設定から「リンクを表示しない」を選択してください。
+  </div>
+</footer>
+<script>
+(function() {
+  try {
+    const s = localStorage.getItem('v3_affiliate');
+    const aff = s ? JSON.parse(s) : {};
+    const show = !aff.disabled && (aff.rakutenId || aff.amazonTag);
+    const d = document.getElementById('affiliate-disclosure');
+    if (d && show) d.style.display = 'block';
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>
