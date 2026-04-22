@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://meal-planner-topaz-delta.vercel.app/blog/sitemap.xml
+Sitemap: https://mayuko9775orz-wq.github.io/meal-planner/blog/sitemap.xml
