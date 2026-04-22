@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://meal-planner-topaz-delta.vercel.app/</loc>
+    <loc>https://mayuko9775orz-wq.github.io/meal-planner/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://meal-planner-topaz-delta.vercel.app/blog/</loc>
+    <loc>https://mayuko9775orz-wq.github.io/meal-planner/blog/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://meal-planner-topaz-delta.vercel.app/blog/about.html</loc>
+    <loc>https://mayuko9775orz-wq.github.io/meal-planner/blog/about.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://meal-planner-topaz-delta.vercel.app/blog/posts/001-why-i-built-this.html</loc>
+    <loc>https://mayuko9775orz-wq.github.io/meal-planner/blog/posts/001-why-i-built-this.html</loc>
     <lastmod>2026-04-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://meal-planner-topaz-delta.vercel.app/blog/posts/002-adhd-and-cooking.html</loc>
+    <loc>https://mayuko9775orz-wq.github.io/meal-planner/blog/posts/002-adhd-and-cooking.html</loc>
     <lastmod>2026-04-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://meal-planner-topaz-delta.vercel.app/blog/posts/003-limit-recipes.html</loc>
+    <loc>https://mayuko9775orz-wq.github.io/meal-planner/blog/posts/003-limit-recipes.html</loc>
     <lastmod>2026-04-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

@@ -2,31 +2,31 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
   <title>献立ラボ</title>
-  <link>https://meal-planner-topaz-delta.vercel.app/blog/</link>
+  <link>https://mayuko9775orz-wq.github.io/meal-planner/blog/</link>
   <description>発達障害当事者や、段取りが苦手な人向けの料理・食・暮らしブログ</description>
   <language>ja</language>
-  <atom:link href="https://meal-planner-topaz-delta.vercel.app/blog/rss.xml" rel="self" type="application/rss+xml" />
+  <atom:link href="https://mayuko9775orz-wq.github.io/meal-planner/blog/rss.xml" rel="self" type="application/rss+xml" />
 
   <item>
     <title>今日はこれでOK。がんばらない日の「限界レシピ」10選</title>
-    <link>https://meal-planner-topaz-delta.vercel.app/blog/posts/003-limit-recipes.html</link>
-    <guid>https://meal-planner-topaz-delta.vercel.app/blog/posts/003-limit-recipes.html</guid>
+    <link>https://mayuko9775orz-wq.github.io/meal-planner/blog/posts/003-limit-recipes.html</link>
+    <guid>https://mayuko9775orz-wq.github.io/meal-planner/blog/posts/003-limit-recipes.html</guid>
     <description>包丁を使わず、冷凍食材を鍋に入れるだけ。本当に疲れた日のための「限界レシピ」10選。</description>
     <pubDate>Wed, 22 Apr 2026 00:00:00 +0900</pubDate>
   </item>
 
   <item>
     <title>ADHDと料理: ワーキングメモリを「外部化」するという戦略</title>
-    <link>https://meal-planner-topaz-delta.vercel.app/blog/posts/002-adhd-and-cooking.html</link>
-    <guid>https://meal-planner-topaz-delta.vercel.app/blog/posts/002-adhd-and-cooking.html</guid>
+    <link>https://mayuko9775orz-wq.github.io/meal-planner/blog/posts/002-adhd-and-cooking.html</link>
+    <guid>https://mayuko9775orz-wq.github.io/meal-planner/blog/posts/002-adhd-and-cooking.html</guid>
     <description>ADHDの人が料理を苦手と感じる背景には、ワーキングメモリの容量問題があります。</description>
     <pubDate>Wed, 22 Apr 2026 00:00:00 +0900</pubDate>
   </item>
 
   <item>
     <title>段取りが苦手な私が、発達障害向けの献立アプリを作った理由</title>
-    <link>https://meal-planner-topaz-delta.vercel.app/blog/posts/001-why-i-built-this.html</link>
-    <guid>https://meal-planner-topaz-delta.vercel.app/blog/posts/001-why-i-built-this.html</guid>
+    <link>https://mayuko9775orz-wq.github.io/meal-planner/blog/posts/001-why-i-built-this.html</link>
+    <guid>https://mayuko9775orz-wq.github.io/meal-planner/blog/posts/001-why-i-built-this.html</guid>
     <description>ADHDとASDの特性を持つ当事者が、日々の料理で感じた「無理」を減らすために献立アプリを作りました。</description>
     <pubDate>Wed, 22 Apr 2026 00:00:00 +0900</pubDate>
   </item>
