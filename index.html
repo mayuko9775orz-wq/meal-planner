@@ -192,6 +192,8 @@
   .recipe-card.fav-recipe { border-color:var(--fav-gold); box-shadow:0 0 0 1px rgba(201,169,110,.15), 0 2px 12px rgba(201,169,110,.08); }
   .recipe-title { font-weight:500; font-size:.95rem; margin-bottom:4px; }
   .seasonal-badge { display:inline-block; font-size:.65rem; background:rgba(138,173,122,.12); color:var(--seasonal); padding:1px 6px; border-radius:8px; margin-left:4px; font-weight:500; }
+  .level-badge { display:inline-block; font-size:.65rem; padding:1px 6px; border-radius:8px; margin-left:4px; font-weight:500; }
+  .mode-btn.active { background: var(--primary); color:white; border-color: var(--primary); }
   .history-badge { display:inline-block; font-size:.65rem; color:var(--text-light); margin-left:4px; opacity:.7; }
   .recipe-meta { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
   .recipe-tag {
@@ -579,6 +581,7 @@
     <p>毎日の食卓を簡単に</p>
   </div>
   <div class="header-actions">
+    <a href="./blog/" class="theme-toggle-btn" title="献立ラボ(ブログ)を見る" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center">📝</a>
     <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle" title="ダーク/ライトモード切替">🌙</button>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
   </div>
@@ -600,6 +603,12 @@
       <h3 style="margin:0;flex:1" id="today-title">今日の献立</h3>
       <button class="btn btn-sm" onclick="autoGenerateToday()">🎲 今日を自動生成</button>
     </div>
+    <div class="mode-switch" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-outline mode-btn" data-mode="normal" onclick="setCookingMode('normal')">🙂 ふつうの日</button>
+      <button class="btn btn-sm btn-outline mode-btn" data-mode="limit" onclick="setCookingMode('limit')">🫧 がんばらない日</button>
+      <button class="btn btn-sm btn-outline mode-btn" data-mode="challenge" onclick="setCookingMode('challenge')">🔥 今日は凝る日</button>
+    </div>
+    <div id="mode-hint" style="font-size:.8rem;color:var(--text-light);margin-bottom:10px;display:none"></div>
     <div id="today-board"></div>
   </div>
   <div class="card" id="today-cooking-card" style="display:none">
@@ -622,7 +631,14 @@
   </div>
   <div class="card">
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-sm" onclick="generateShoppingFromWeek()">🛒 買い物リストを生成</button>
+      <select id="shopping-scope-select" style="min-width:120px">
+        <option value="today">今日の分</option>
+        <option value="tomorrow">明日の分</option>
+        <option value="2days">今日＋明日</option>
+        <option value="3days">3日分</option>
+        <option value="week" selected>週間まとめ</option>
+      </select>
+      <button class="btn btn-sm" onclick="generateShoppingFromScope()">🛒 買い物リストを生成</button>
       <select id="cooking-day-select" style="flex:1;min-width:120px" onchange="selectCookingDay()">
         <option value="">調理する日を選択...</option>
       </select>
@@ -677,6 +693,12 @@
       <button class="btn-outline btn-sm" onclick="filterByCategory('サラダ',this)">🥬 サラダ</button>
       <button class="btn-outline btn-sm" onclick="filterByCategory('主食',this)">🍚 主食</button>
       <button class="btn-outline btn-sm" onclick="filterByCategory('seasonal',this)" style="border-color:var(--seasonal);color:var(--seasonal)">🌿 旬</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="level-filters">
+      <button class="btn-outline btn-sm active" onclick="filterByLevel('all',this)">すべての難易度</button>
+      <button class="btn-outline btn-sm" onclick="filterByLevel('limit',this)" style="border-color:#7a9aad;color:#5a7a8d">🆘 限界レシピ</button>
+      <button class="btn-outline btn-sm" onclick="filterByLevel('easy',this)" style="border-color:#8aad7a;color:#6a8d5a">🫧 かんたん</button>
+      <button class="btn-outline btn-sm" onclick="filterByLevel('challenge',this)" style="border-color:#c4877a;color:#a86858">🔥 挑戦レシピ</button>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="flavor-filters">
       <button class="btn-outline btn-sm active" onclick="filterByFlavor('all',this)">すべて</button>
@@ -829,6 +851,14 @@
   </div>
 </div>
 
+<!-- ===== ガントブロック詳細モーダル ===== -->
+<div id="gantt-detail-modal" class="modal" onclick="if(event.target===this)closeGanttDetail()">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeGanttDetail()">✕</button>
+    <div id="gantt-detail-content"></div>
+  </div>
+</div>
+
 <!-- ===== スロット追加モーダル ===== -->
 <div id="slot-modal" class="modal">
   <div class="modal-content">
@@ -856,12 +886,46 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeSettings()">✕</button>
     <div class="modal-title">⚙️ 設定</div>
+
     <h4 style="margin:16px 0 8px;font-size:.9rem">Notion連携</h4>
     <label>Integration Token</label>
     <input type="password" id="notion-token" placeholder="your_notion_integration_token">
     <label>Parent Page ID</label>
     <input type="text" id="notion-page-id" placeholder="page_id">
     <button class="btn" onclick="saveNotionSettings()" style="width:100%;margin-top:8px">保存</button>
+
+    <h4 style="margin:24px 0 8px;font-size:.9rem">🛒 アフィリエイトリンク(任意)</h4>
+    <div style="font-size:.75rem;color:var(--text-light);margin-bottom:8px;line-height:1.5">
+      材料や買い物リストから通販サイトを検索できるようになります。<br>
+      開発者支援として、登録IDを設定するとアフィリエイトリンクになります。<br>
+      <strong>完全オフ</strong>にしたい場合は「リンクを表示しない」にチェックを入れてください。
+    </div>
+    <label>楽天アフィリエイトID</label>
+    <input type="text" id="rakuten-affiliate-id" placeholder="例: 2001xxxx.xxxxxxxx.xxxxxxxx.xxxxxxxx">
+    <label>Amazonアソシエイトタグ(任意)</label>
+    <input type="text" id="amazon-associate-tag" placeholder="例: yourname-22">
+    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-weight:normal">
+      <input type="checkbox" id="affiliate-disabled" style="width:auto;margin:0">
+      🚫 リンクを一切表示しない(プライバシーモード)
+    </label>
+
+    <h4 style="margin:20px 0 8px;font-size:.85rem">🍱 宅配サービスの提案リンク(任意)</h4>
+    <div style="font-size:.72rem;color:var(--text-light);margin-bottom:8px;line-height:1.5">
+      「がんばらない日」や献立が空の日に、さりげなく提案カードを表示します。<br>
+      もしもアフィリエイト等で発行したURLを貼ると、アフィリエイトリンクになります。
+    </div>
+    <label>🍱 宅配弁当(ナッシュ等)のリンクURL</label>
+    <input type="text" id="nosh-url" placeholder="https://... (空欄で nosh.jp にリンク)">
+    <label>🥬 ミールキット(Oisix等)のリンクURL</label>
+    <input type="text" id="oisix-url" placeholder="https://... (空欄で oisix.com にリンク)">
+    <label>🍲 つくりおきサービスのリンクURL</label>
+    <input type="text" id="tsukurioki-url" placeholder="https://... (空欄で tsukurioki.jp にリンク)">
+    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-weight:normal">
+      <input type="checkbox" id="mealkit-cards-disabled" style="width:auto;margin:0">
+      📴 宅配提案カードを表示しない
+    </label>
+
+    <button class="btn" onclick="saveAffiliateSettings()" style="width:100%;margin-top:12px">保存</button>
   </div>
 </div>
 
@@ -889,12 +953,15 @@ let notionSettings = {token:'',parentPageId:''};
 let currentSourceFilter = 'all';
 let currentCategoryFilter = 'all';
 let currentFlavorFilter = 'all';
+let currentLevelFilter = 'all';
 let pendingSlotInfo = null;
 let editingRecipeId = null;
 let ngRecipes = new Set(); // 自動生成NGレシピ
 let favRecipes = new Set(); // お気に入りレシピ
 let recipeHistory = []; // レシピ使用履歴 [{id, date, slot}, ...]
 let slotSourceFilter = 'all';
+let cookingMode = 'normal'; // 'normal' | 'limit' | 'challenge'
+let affiliateSettings = {rakutenId:'', amazonTag:'', disabled:false, noshUrl:'', oisixUrl:'', tsukuriokiUrl:'', mealkitDisabled:false};
 
 // ============================
 // 旬の食材マップ
@@ -1089,6 +1156,30 @@ const hotcookRecipeDB = [
 ];
 
 // ============================
+// レシピDB — 限界レシピ（がんばらない日用）
+// ============================
+const limitRecipeDB = [
+  {title:'冷凍野菜の豚こま豚汁',category:'汁物',desc:'包丁を使わず、冷凍カット野菜と豚こまを鍋に放り込むだけの豚汁。疲れた日の一番の味方。',ingredients:['冷凍カット野菜ミックス/200g','豚こま切れ肉/100g','だしの素(顆粒)/小さじ2','味噌/大さじ1.5','水/500ml'],tags:['汁物','豚肉','冷凍OK','限界'],flavors:['味噌','和風だし'],cookTime:12,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','一鍋'],steps:[{text:'鍋に水とだしの素を入れて火にかける',duration:3,resource:'コンロ1'},{text:'冷凍のまま野菜と豚こまを投入',duration:1,resource:'コンロ1'},{text:'蓋をして8分煮る',duration:8,resource:'コンロ1',passive:true},{text:'火を止めて味噌を溶かす',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:3,carb:0,other:1}},
+  {title:'レンジで冷凍ブロッコリーのツナ蒸し',category:'副菜',desc:'耐熱ボウルに全部入れてレンジでチン。これで1品増える。',ingredients:['冷凍ブロッコリー/150g','ツナ缶/1缶','めんつゆ/小さじ1','ごま油/小さじ1'],tags:['副菜','冷凍OK','レンジ','限界'],flavors:['和風','ごま'],cookTime:6,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','レンジのみ','調味料3種以内'],steps:[{text:'耐熱ボウルに凍ったブロッコリー・ツナ(油も)を入れる',duration:1,resource:'手作業'},{text:'ラップして600Wで5分加熱',duration:5,resource:'レンジ',passive:true},{text:'めんつゆとごま油を加えて軽く混ぜる',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:3,carb:0,other:0}},
+  {title:'冷凍うどんの温玉のせ',category:'主食',desc:'レンジだけで完結する温玉うどん。火を一切使わない。',ingredients:['冷凍うどん/1玉','卵/1個','めんつゆ(ストレート)/大さじ3','乾燥青ねぎ/適量'],tags:['主食','うどん','冷凍OK','レンジ','限界'],flavors:['和風','めんつゆ'],cookTime:5,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','レンジのみ'],steps:[{text:'冷凍うどんを袋の表示通りレンジで加熱',duration:3,resource:'レンジ',passive:true},{text:'耐熱カップに水大さじ1と卵を入れ黄身に穴を開け、500Wで40秒',duration:1,resource:'レンジ',passive:true},{text:'うどんを器に盛りめんつゆを回しかけ、温玉と青ねぎをのせる',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:0,carb:3,other:0}},
+  {title:'ホットクック冷凍カレー',category:'主菜',desc:'冷凍野菜と冷凍肉をホットクックに入れてボタンを押すだけ。包丁ゼロ。',ingredients:['冷凍カット野菜(カレー用)/500g','冷凍鶏もも切り身/300g','カレールー/4皿分','水/300ml'],tags:['主菜','カレー','冷凍OK','ホットクック','限界'],flavors:['カレー'],cookTime:50,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','放置系'],steps:[{text:'内鍋に凍ったまま野菜・鶏肉・水を入れる',duration:2,resource:'手作業'},{text:'自動メニュー「チキンと野菜のカレー」で加熱',duration:45,resource:'ホットクック',passive:true},{text:'ルーを割り入れて混ぜ、追加加熱5分',duration:5,resource:'ホットクック',passive:true}],nutrition:{protein:3,vegetable:3,carb:2,other:0}},
+  {title:'サバ缶とカットキャベツの味噌煮',category:'主菜',desc:'サバ缶を汁ごと使う。フライパン一つで完結。',ingredients:['サバ味噌煮缶/1缶','千切りカットキャベツ/150g','冷凍カット玉ねぎ/100g','水/50ml'],tags:['主菜','サバ缶','キャベツ','限界'],flavors:['味噌'],cookTime:10,limitLevel:'limit',limitTags:['まな板不要','一鍋','調味料3種以内'],steps:[{text:'フライパンにキャベツ・冷凍玉ねぎ・水を入れ、蓋をして蒸し煮',duration:5,resource:'コンロ1',passive:true},{text:'サバ缶を汁ごと加え全体を和える',duration:3,resource:'コンロ1'},{text:'火を止める',duration:1,resource:'手作業'}],nutrition:{protein:3,vegetable:3,carb:0,other:0}},
+  {title:'冷凍シーフードとほうれん草のワンパンパスタ',category:'主食',desc:'パスタと具材を同じフライパンで茹でる。洗い物も最小限。',ingredients:['スパゲッティ/100g','冷凍シーフードミックス/150g','冷凍ほうれん草/80g','にんにくチューブ/2cm','オリーブオイル/大さじ1','塩/小さじ1/2','水/600ml'],tags:['主食','パスタ','冷凍OK','ワンパン','限界'],flavors:['オリーブオイル','にんにく','塩'],cookTime:12,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','一鍋'],steps:[{text:'フライパンに水・塩・オリーブオイル・にんにくを入れ沸かす',duration:3,resource:'コンロ1'},{text:'パスタを半分に折って投入、中火で7分',duration:7,resource:'コンロ1'},{text:'残り3分で冷凍シーフードと冷凍ほうれん草を加える',duration:3,resource:'コンロ1'},{text:'水分が残っていたら飛ばして和える',duration:1,resource:'コンロ1'}],nutrition:{protein:2,vegetable:2,carb:3,other:0}},
+  {title:'納豆キムチごはん',category:'主食',desc:'火を使わず混ぜるだけ。本当に何もできない日のための安全網。',ingredients:['ごはん/茶碗1杯','納豆/1パック','キムチ/30g','ごま油/小さじ1'],tags:['主食','納豆','キムチ','火不要','限界'],flavors:['和風','キムチ','ごま'],cookTime:2,limitLevel:'limit',limitTags:['まな板不要','調味料3種以内'],steps:[{text:'ごはんの上に納豆とキムチをのせる',duration:1,resource:'手作業'},{text:'ごま油を回しかけて軽く混ぜる',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:1,carb:3,other:0}},
+  {title:'冷凍餃子のパリパリ焼き',category:'主菜',desc:'水入れて蓋するだけ。栄養は副菜で補うこと。',ingredients:['冷凍餃子(水・油不要タイプ)/10個','水/大さじ3','ごま油/小さじ1'],tags:['主菜','餃子','冷凍OK','限界'],flavors:['餃子'],cookTime:8,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','一鍋','調味料3種以内'],steps:[{text:'フライパンに凍ったまま餃子を並べ、水を加えて蓋をする',duration:1,resource:'手作業'},{text:'中火で6分蒸し焼き',duration:6,resource:'コンロ1',passive:true},{text:'蓋を外しごま油を回して1分焼く',duration:1,resource:'コンロ1'}],nutrition:{protein:2,vegetable:1,carb:1,other:0}},
+];
+
+// ============================
+// レシピDB — 挑戦レシピ（凝る日用）
+// ============================
+const challengeRecipeDB = [
+  {title:'ビリヤニ(チキン)',category:'主食',desc:'スパイスから炊き上げる本格インド料理。2層仕込みで香り高く。気合いが入った日に。',ingredients:['バスマティライス/300g','鶏もも肉/500g','玉ねぎ/2個','トマト/2個','ヨーグルト(無糖)/150g','しょうが/1片','にんにく/2片','青唐辛子/1本','ミント/一掴み','パクチー/一掴み','クミンシード/小さじ1','カルダモン/4粒','クローブ/4粒','シナモンスティック/1本','ローリエ/2枚','ターメリック/小さじ1','ガラムマサラ/小さじ2','チリパウダー/小さじ1','サフラン/ひとつまみ','牛乳(温)/50ml','ギー(またはバター)/大さじ3','塩/適量'],tags:['主食','インド','スパイス','挑戦'],flavors:['スパイス','カルダモン','ガラムマサラ'],cookTime:120,limitLevel:'challenge',challengeTags:['本格','時間必要','複数工程','特別な食材'],steps:[{text:'バスマティライスを30分浸水',duration:30,resource:'手作業',passive:true},{text:'玉ねぎをスライスし、ギーで深い茶色になるまで15分かけて揚げ炒め',duration:15,resource:'コンロ1'},{text:'しょうが・にんにくをすりおろし、トマトを刻む',duration:5,resource:'手作業'},{text:'鶏肉にヨーグルト・スパイス半量・塩で30分マリネ',duration:30,resource:'手作業',passive:true},{text:'別の鍋で浸水したライスをホールスパイスと塩で7分下茹で(7割火入れ)',duration:10,resource:'コンロ2'},{text:'厚手鍋で鶏マリネを炒め、トマトと揚げ玉ねぎ半量を加えて煮詰める',duration:10,resource:'コンロ1'},{text:'鶏の上にライスを層にし、サフランミルク・残りの揚げ玉ねぎ・ハーブを散らす',duration:3,resource:'手作業'},{text:'蓋をして極弱火で25分蒸らし(ダム)',duration:25,resource:'コンロ1',passive:true},{text:'火を止めて10分蒸らし、全体をそっと混ぜる',duration:10,resource:'手作業',passive:true}],nutrition:{protein:4,vegetable:2,carb:4,other:1}},
+  {title:'ブッフブルギニヨン',category:'主菜',desc:'牛肉を赤ワインで3時間煮込むフランス定番。時間はかかるがほぼ放置。',ingredients:['牛すね肉(または肩ロース角切り)/800g','ベーコン塊/150g','玉ねぎ/1個','にんじん/2本','マッシュルーム/200g','にんにく/3片','赤ワイン/750ml(1本)','ビーフストック/500ml','トマトペースト/大さじ2','ブーケガルニ(タイム・ローリエ・パセリ茎)/1束','薄力粉/大さじ3','バター/30g','オリーブオイル/大さじ2','塩こしょう/適量','小玉ねぎ/12個'],tags:['主菜','フレンチ','煮込み','挑戦'],flavors:['赤ワイン','バター'],cookTime:210,limitLevel:'challenge',challengeTags:['本格','時間必要','複数工程'],steps:[{text:'牛肉を5cm角に切り塩こしょう、薄力粉をまぶす',duration:5,resource:'手作業'},{text:'ベーコンを拍子木切り、野菜を刻む',duration:8,resource:'手作業'},{text:'厚手鍋でベーコンを炒め取り出す',duration:5,resource:'コンロ1'},{text:'同じ鍋で牛肉を強火で全面焼き色をつける(数回に分けて)',duration:15,resource:'コンロ1'},{text:'玉ねぎ・にんじん・にんにくを加えて炒める',duration:8,resource:'コンロ1'},{text:'赤ワインを注ぎアルコールを飛ばす',duration:5,resource:'コンロ1'},{text:'ビーフストック・トマトペースト・ブーケガルニを加え沸騰させる',duration:5,resource:'コンロ1'},{text:'蓋をして弱火で2時間30分煮込む',duration:150,resource:'コンロ1',passive:true},{text:'別鍋でマッシュルームと小玉ねぎをバターでソテー',duration:8,resource:'コンロ2'},{text:'仕上げに加えて10分煮込み、味を整える',duration:10,resource:'コンロ1'}],nutrition:{protein:5,vegetable:3,carb:0,other:1}},
+  {title:'煮込みハンバーグ(デミ別仕込み)',category:'主菜',desc:'ハンバーグとデミグラスソースを別々に仕込む本格派。合わせて煮込むと格別。',ingredients:['合挽肉/500g','玉ねぎ(ハンバーグ用)/1個','パン粉/1カップ','牛乳/80ml','卵/1個','ナツメグ/少々','塩こしょう/適量','玉ねぎ(ソース用)/1個','マッシュルーム/150g','バター/40g','薄力粉/大さじ3','赤ワイン/200ml','デミグラスソース缶/1缶','ケチャップ/大さじ2','ウスターソース/大さじ1','ビーフストック/200ml','サラダ油/大さじ2'],tags:['主菜','洋食','ハンバーグ','挑戦'],flavors:['デミグラス','赤ワイン'],cookTime:90,limitLevel:'challenge',challengeTags:['本格','複数工程'],steps:[{text:'玉ねぎ(ハンバーグ用)をみじん切りにして炒め冷ます',duration:10,resource:'コンロ1'},{text:'パン粉を牛乳に浸す',duration:2,resource:'手作業'},{text:'挽肉・冷ました玉ねぎ・浸したパン粉・卵・ナツメグ・塩こしょうをよく練る',duration:5,resource:'手作業'},{text:'4等分して成形、空気を抜きながら中央をくぼませる',duration:4,resource:'手作業'},{text:'別フライパンで薄くスライスした玉ねぎ(ソース用)とマッシュルームをバターで炒める',duration:8,resource:'コンロ2'},{text:'薄力粉を振り入れ炒め合わせ、赤ワインで溶きのばす',duration:5,resource:'コンロ2'},{text:'デミグラス・ケチャップ・ウスター・ビーフストックを加えソースを作る',duration:5,resource:'コンロ2'},{text:'サラダ油でハンバーグを両面こんがり焼き付ける',duration:8,resource:'コンロ1'},{text:'ソースの鍋にハンバーグを移し20分煮込む',duration:20,resource:'コンロ2',passive:true}],nutrition:{protein:4,vegetable:2,carb:1,other:1}},
+  {title:'本格エビチリ',category:'主菜',desc:'エビは下処理・片栗粉で揚げ、ソースは別仕込み。中華料理店の味を自宅で。',ingredients:['ブラックタイガー/16尾(300g)','塩/小さじ1/2','酒/大さじ1','片栗粉(エビ用)/大さじ2','卵白/1個分','にんにく/2片','しょうが/1片','長ねぎ/1/2本','豆板醤/大さじ1','甜麺醤/大さじ1','ケチャップ/大さじ4','砂糖/大さじ1','酒(ソース用)/大さじ2','鶏ガラスープ/150ml','酢/小さじ1','ごま油/小さじ1','片栗粉(水溶き)/大さじ1','サラダ油/大さじ4'],tags:['主菜','中華','エビ','挑戦'],flavors:['中華','辛口'],cookTime:50,limitLevel:'challenge',challengeTags:['本格','複数工程'],steps:[{text:'エビの殻と背わたを除き、塩と片栗粉で揉んで水洗いしキッチンペーパーで拭く',duration:10,resource:'手作業'},{text:'エビに酒・塩・卵白・片栗粉の順で下味をつけ10分置く',duration:10,resource:'手作業',passive:true},{text:'にんにく・しょうが・長ねぎをみじん切り',duration:5,resource:'手作業'},{text:'ソース材料(豆板醤・甜麺醤・ケチャップ・砂糖・酒・鶏ガラスープ)を合わせておく',duration:2,resource:'手作業'},{text:'多めの油でエビを中火で2分揚げ焼きして取り出す',duration:5,resource:'コンロ1'},{text:'同じフライパンでにんにく・しょうがを香り出し、合わせ調味料を入れる',duration:3,resource:'コンロ1'},{text:'エビを戻しソースを絡めながら1分炒める',duration:2,resource:'コンロ1'},{text:'水溶き片栗粉でとろみをつけ、酢・ごま油・長ねぎで仕上げる',duration:2,resource:'コンロ1'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+];
+
+// ============================
 // レシピDB — 外部サイト（CORS制限のためサンプルデータ + サイトリンク）
 // ============================
 const siteRecipeDB = {
@@ -1173,6 +1264,8 @@ function getAllRecipes() {
   shushokuRecipeDB.forEach(r => all.push({...r, source:'basic', id:'b_'+r.title}));
   akariRecipeDB.forEach(r => all.push({...r, source:'akari', id:'a_'+r.title}));
   hotcookRecipeDB.forEach(r => all.push({...r, source:'hotcook', id:'h_'+r.title}));
+  limitRecipeDB.forEach(r => all.push({...r, source:'limit', id:'l_'+r.title}));
+  challengeRecipeDB.forEach(r => all.push({...r, source:'challenge', id:'c_'+r.title}));
   Object.entries(siteRecipeDB).forEach(([key, site]) => {
     site.recipes.forEach(r => all.push({...r, source:key, id:'s_'+key+'_'+r.title, siteUrl:r.url||site.baseUrl, siteName:site.name, siteColor:site.color}));
   });
@@ -1182,6 +1275,17 @@ function getAllRecipes() {
 
 function getRecipeById(id) {
   return getAllRecipes().find(r => r.id === id);
+}
+
+// レシピの難易度レベルを返す。明示的な limitLevel があればそれ、なければ時間・手数から推測
+function getRecipeLevel(recipe) {
+  if (!recipe) return 'normal';
+  if (recipe.limitLevel) return recipe.limitLevel;
+  const time = recipe.cookTime || 20;
+  const stepCount = (recipe.steps || []).length;
+  if (time <= 15 && stepCount <= 5) return 'easy';
+  if (time >= 90 || stepCount >= 9) return 'challenge';
+  return 'normal';
 }
 
 function normalizeCategory(cat) {
@@ -1216,6 +1320,7 @@ function saveState() {
   localStorage.setItem('v3_cookday', selectedCookingDay);
   localStorage.setItem('v3_ng', JSON.stringify([...ngRecipes]));
   localStorage.setItem('v3_fav', JSON.stringify([...favRecipes]));
+  localStorage.setItem('v3_mode', cookingMode);
   localStorage.setItem('v3_history', JSON.stringify(recipeHistory));
 }
 function loadState() {
@@ -1239,7 +1344,233 @@ function loadState() {
     if (hist) recipeHistory = JSON.parse(hist);
     // 履歴は最大200件まで保持
     if (recipeHistory.length > 200) recipeHistory = recipeHistory.slice(-200);
+    const mode = localStorage.getItem('v3_mode');
+    if (mode) cookingMode = mode;
+    const aff = localStorage.getItem('v3_affiliate');
+    if (aff) affiliateSettings = {...affiliateSettings, ...JSON.parse(aff)};
   } catch(e) { console.error('loadState error', e); }
+}
+
+// ============================
+// アフィリエイトリンク
+// ============================
+function saveAffiliateSettings() {
+  affiliateSettings = {
+    rakutenId: (document.getElementById('rakuten-affiliate-id').value || '').trim(),
+    amazonTag: (document.getElementById('amazon-associate-tag').value || '').trim(),
+    disabled: document.getElementById('affiliate-disabled').checked,
+    noshUrl: (document.getElementById('nosh-url').value || '').trim(),
+    oisixUrl: (document.getElementById('oisix-url').value || '').trim(),
+    tsukuriokiUrl: (document.getElementById('tsukurioki-url').value || '').trim(),
+    mealkitDisabled: document.getElementById('mealkit-cards-disabled').checked
+  };
+  localStorage.setItem('v3_affiliate', JSON.stringify(affiliateSettings));
+  showToast('アフィリエイト設定を保存しました');
+  closeSettings();
+  renderRecipeList();
+  updateShoppingDisplay();
+  renderTodayBoard();
+}
+
+function loadAffiliateUI() {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  const check = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+  set('rakuten-affiliate-id', affiliateSettings.rakutenId);
+  set('amazon-associate-tag', affiliateSettings.amazonTag);
+  check('affiliate-disabled', affiliateSettings.disabled);
+  set('nosh-url', affiliateSettings.noshUrl);
+  set('oisix-url', affiliateSettings.oisixUrl);
+  set('tsukurioki-url', affiliateSettings.tsukuriokiUrl);
+  check('mealkit-cards-disabled', affiliateSettings.mealkitDisabled);
+}
+
+// 材料名からアフィリエイト検索URLを生成
+function getAffiliateLinks(itemName) {
+  if (affiliateSettings.disabled) return null;
+  const name = (itemName || '').trim();
+  if (!name) return null;
+  const links = [];
+  const encoded = encodeURIComponent(name);
+  // 楽天
+  if (affiliateSettings.rakutenId) {
+    const rakutenSearch = `https://search.rakuten.co.jp/search/mall/${encoded}/`;
+    const url = `https://hb.afl.rakuten.co.jp/ichiba/${affiliateSettings.rakutenId}/?pc=${encodeURIComponent(rakutenSearch)}&m=${encodeURIComponent('https://m.rakuten.co.jp/')}`;
+    links.push({name:'楽天', url, color:'#bf0000'});
+  } else {
+    // ID未登録でも素のリンクは貼る(収益は出ない)
+    links.push({name:'楽天', url:`https://search.rakuten.co.jp/search/mall/${encoded}/`, color:'#bf0000'});
+  }
+  // Amazon
+  if (affiliateSettings.amazonTag) {
+    links.push({name:'Amazon', url:`https://www.amazon.co.jp/s?k=${encoded}&tag=${affiliateSettings.amazonTag}`, color:'#ff9900'});
+  } else {
+    links.push({name:'Amazon', url:`https://www.amazon.co.jp/s?k=${encoded}`, color:'#ff9900'});
+  }
+  return links;
+}
+
+function hasActiveAffiliate() {
+  return !affiliateSettings.disabled && (affiliateSettings.rakutenId || affiliateSettings.amazonTag);
+}
+
+// レシピに応じた「あると便利なもの」カード
+function renderRecipeGearCard(recipe) {
+  if (affiliateSettings.disabled) return '';
+  if (!recipe) return '';
+
+  const suggestions = [];
+  const isHotcook = recipe.source === 'hotcook' || (recipe.steps||[]).some(s => s.resource === 'ホットクック');
+  const isChallenge = getRecipeLevel(recipe) === 'challenge';
+  const resources = new Set((recipe.steps||[]).map(s => s.resource));
+  const title = (recipe.title || '').toLowerCase();
+
+  // ホットクック
+  if (isHotcook) {
+    suggestions.push({
+      label: '🍲 ヘルシオ ホットクック',
+      desc: 'このレシピはホットクックがあれば圧倒的に楽に作れます',
+      query: 'ホットクック シャープ KN-HW24G'
+    });
+  }
+  // 挑戦レシピ: タイトルベースで道具を推薦
+  if (isChallenge) {
+    if (/ビリヤニ|カレー|インド/.test(recipe.title)) {
+      suggestions.push({label:'🥘 厚手鍋(ストウブ等)', desc:'スパイスをじっくり炒めて仕上げるダム調理に', query:'ストウブ 鍋 24cm'});
+    }
+    if (/ブッフ|ブルギニヨン|煮込み|シチュー/.test(recipe.title)) {
+      suggestions.push({label:'🍲 厚手鋳物鍋', desc:'長時間の煮込みに最適', query:'ダッチオーブン ル・クルーゼ ストウブ'});
+    }
+    if (/ハンバーグ/.test(recipe.title)) {
+      suggestions.push({label:'🍳 鉄フライパン', desc:'焼き色を均一につけるのに', query:'鉄フライパン 26cm'});
+    }
+    if (/エビチリ|中華|炒め/.test(recipe.title)) {
+      suggestions.push({label:'🥢 中華鍋/深型フライパン', desc:'強火調理がしやすい', query:'中華鍋 深型フライパン'});
+    }
+  }
+  // オーブン調理
+  if (resources.has('オーブン')) {
+    suggestions.push({label:'🌡️ 食材用温度計', desc:'焼き加減を科学的に判断', query:'料理用温度計 デジタル'});
+  }
+  // 重複除去
+  const uniq = [];
+  const seen = new Set();
+  suggestions.forEach(s => { if (!seen.has(s.label)) { seen.add(s.label); uniq.push(s); } });
+  if (uniq.length === 0) return '';
+
+  const cards = uniq.slice(0,2).map(s => {
+    const enc = encodeURIComponent(s.query);
+    const amazonUrl = affiliateSettings.amazonTag
+      ? `https://www.amazon.co.jp/s?k=${enc}&tag=${affiliateSettings.amazonTag}`
+      : `https://www.amazon.co.jp/s?k=${enc}`;
+    const rakutenUrl = affiliateSettings.rakutenId
+      ? `https://hb.afl.rakuten.co.jp/ichiba/${affiliateSettings.rakutenId}/?pc=${encodeURIComponent('https://search.rakuten.co.jp/search/mall/'+enc+'/')}`
+      : `https://search.rakuten.co.jp/search/mall/${enc}/`;
+    return `<div style="padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px">
+      <div style="font-weight:600;font-size:.85rem;margin-bottom:2px">${s.label}</div>
+      <div style="font-size:.72rem;color:var(--text-light);margin-bottom:6px">${s.desc}</div>
+      <div style="display:flex;gap:6px">
+        <a href="${amazonUrl}" target="_blank" rel="noopener noreferrer sponsored" style="font-size:.7rem;color:#ff9900;text-decoration:none;padding:2px 8px;border-radius:6px;background:rgba(255,153,0,.1)">Amazonで探す</a>
+        <a href="${rakutenUrl}" target="_blank" rel="noopener noreferrer sponsored" style="font-size:.7rem;color:#bf0000;text-decoration:none;padding:2px 8px;border-radius:6px;background:rgba(191,0,0,.1)">楽天で探す</a>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div style="margin-top:18px;padding:14px;border-radius:12px;background:rgba(201,169,110,.05);border:1px dashed var(--border)">
+    <div style="font-size:.82rem;font-weight:600;margin-bottom:8px;color:var(--primary-dark)">💡 あると便利なもの <span style="font-size:.6rem;opacity:.5;font-weight:normal">PR</span></div>
+    ${cards}
+  </div>`;
+}
+
+// 宅配サービス提案カード（コンテキスト別に最適なサービスを1〜2個提示）
+function renderMealKitCard(context) {
+  if (affiliateSettings.disabled || affiliateSettings.mealkitDisabled) return '';
+
+  const services = {
+    nosh: {
+      label: '🍱 ナッシュ',
+      desc: 'レンジで温めるだけの冷凍弁当',
+      url: affiliateSettings.noshUrl || 'https://nosh.jp/',
+      sponsored: !!affiliateSettings.noshUrl
+    },
+    oisix: {
+      label: '🥬 Oisix',
+      desc: '野菜がカット済のミールキット',
+      url: affiliateSettings.oisixUrl || 'https://www.oisix.com/',
+      sponsored: !!affiliateSettings.oisixUrl
+    },
+    tsukurioki: {
+      label: '🍲 つくりおき.jp',
+      desc: '1週間分のおかずを届けてくれる',
+      url: affiliateSettings.tsukuriokiUrl || 'https://tsukurioki.jp/',
+      sponsored: !!affiliateSettings.tsukuriokiUrl
+    }
+  };
+
+  // コンテキストによって出すサービスを選ぶ
+  let picks = [];
+  let title = '';
+  let subtitle = '';
+  if (context === 'limit') {
+    title = '料理もしんどい日は…';
+    subtitle = '今日はこれでもOK。ひとやすみの選択肢。';
+    picks = ['nosh', 'tsukurioki'];
+  } else if (context === 'empty') {
+    title = '献立が決まらない日は…';
+    subtitle = 'さっと決めて、さっと食べる日があってもいい。';
+    picks = ['nosh', 'oisix'];
+  } else if (context === 'shopping') {
+    title = 'まとめて宅配で済ませる?';
+    subtitle = 'スーパーに行く気力がない日の選択肢。';
+    picks = ['oisix', 'tsukurioki'];
+  } else {
+    return '';
+  }
+
+  const cards = picks.map(key => {
+    const s = services[key];
+    const sponsoredTag = s.sponsored
+      ? '<span style="font-size:.62rem;opacity:.5;margin-left:4px">PR</span>'
+      : '';
+    return `<a href="${s.url}" target="_blank" rel="noopener noreferrer${s.sponsored?' sponsored':''}" style="display:block;padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--border);text-decoration:none;color:var(--text);transition:transform .15s">
+      <div style="font-weight:600;font-size:.88rem">${s.label}${sponsoredTag}</div>
+      <div style="font-size:.75rem;color:var(--text-light);margin-top:2px">${s.desc}</div>
+    </a>`;
+  }).join('');
+
+  return `<div class="mealkit-card" style="margin-top:12px;padding:14px;border-radius:14px;background:rgba(138,154,123,.05);border:1px dashed var(--border)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <div style="font-size:.88rem;font-weight:600;flex:1">${title}</div>
+      <button onclick="this.closest('.mealkit-card').style.display='none'" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:1rem;padding:0 4px" title="閉じる">✕</button>
+    </div>
+    <div style="font-size:.75rem;color:var(--text-light);margin-bottom:10px">${subtitle}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${cards}</div>
+  </div>`;
+}
+
+// 調理モード切替
+function setCookingMode(mode) {
+  cookingMode = mode;
+  saveState();
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+    if (b.dataset.mode === mode) {
+      b.classList.remove('btn-outline');
+    } else {
+      b.classList.add('btn-outline');
+    }
+  });
+  const hint = document.getElementById('mode-hint');
+  if (hint) {
+    if (mode === 'limit') {
+      hint.style.display = 'block';
+      hint.textContent = '🫧 今日はこれでOK。無理しないでね。限界レシピを優先的に提案します。';
+    } else if (mode === 'challenge') {
+      hint.style.display = 'block';
+      hint.textContent = '🔥 気合いの入る日。時間をかけて作る本格レシピを提案します。';
+    } else {
+      hint.style.display = 'none';
+    }
+  }
 }
 function loadNotionSettings() {
   try {
@@ -1265,6 +1596,7 @@ function saveNotionSettings() {
 window.addEventListener('DOMContentLoaded', () => {
   loadState();
   loadNotionSettings();
+  setCookingMode(cookingMode);
   renderTodayBoard();
   renderWeekBoard();
   renderRecipeList();
@@ -1832,6 +2164,13 @@ function renderTodayBoard() {
     </div>`;
   }
 
+  // 宅配提案カード：がんばらない日モード or 献立が空の時
+  if (cookingMode === 'limit') {
+    html += renderMealKitCard('limit');
+  } else if (!hasAnyRecipe) {
+    html += renderMealKitCard('empty');
+  }
+
   document.getElementById('today-board').innerHTML = html;
 
   // Show cooking button if there are recipes
@@ -1850,8 +2189,29 @@ function autoGenerateToday() {
   const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
   const recentIds = new Set(recipeHistory.filter(h => new Date(h.date).getTime() > twoWeeksAgo).map(h => h.id));
 
+  // モード別のレシピフィルタリング
+  function filterByMode(pool) {
+    if (cookingMode === 'limit') {
+      const limits = pool.filter(r => getRecipeLevel(r) === 'limit');
+      if (limits.length > 0) return limits;
+      const easy = pool.filter(r => getRecipeLevel(r) === 'easy');
+      return easy.length > 0 ? easy : pool.filter(r => getRecipeLevel(r) !== 'challenge');
+    }
+    if (cookingMode === 'challenge') {
+      const ch = pool.filter(r => getRecipeLevel(r) === 'challenge');
+      if (ch.length > 0) return ch;
+      return pool.filter(r => getRecipeLevel(r) === 'normal' || (r.cookTime && r.cookTime >= 40));
+    }
+    // normal: 両極を除外
+    return pool.filter(r => {
+      const lv = getRecipeLevel(r);
+      return lv !== 'limit' && lv !== 'challenge';
+    });
+  }
+
   function pickOne(pool) {
-    let available = pool;
+    let available = filterByMode(pool);
+    if (available.length === 0) available = pool;
     if (favRecipes.size > 0 && Math.random() < 0.4) {
       const favPool = available.filter(r => favRecipes.has(r.id));
       if (favPool.length > 0) available = favPool;
@@ -1860,7 +2220,6 @@ function autoGenerateToday() {
       const fresh = available.filter(r => !recentIds.has(r.id));
       if (fresh.length > 0) available = fresh;
     }
-    if (available.length === 0) available = pool;
     return available[Math.floor(Math.random() * available.length)];
   }
 
@@ -1941,6 +2300,9 @@ function renderRecipeList() {
   if (currentFlavorFilter !== 'all') {
     filtered = filtered.filter(r => (r.flavors||[]).includes(currentFlavorFilter));
   }
+  if (currentLevelFilter !== 'all') {
+    filtered = filtered.filter(r => getRecipeLevel(r) === currentLevelFilter);
+  }
   if (q) filtered = filtered.filter(r =>
     r.title.toLowerCase().includes(q) || r.desc?.toLowerCase().includes(q) ||
     (r.tags||[]).some(t => t.toLowerCase().includes(q)) ||
@@ -1964,9 +2326,17 @@ function renderRecipeList() {
     const daysAgo = getRecipeHistoryDaysAgo(r.id);
     const historyLabel = daysAgo >= 0 && daysAgo <= 30 ? `<span class="history-badge">前回: ${daysAgo}日前</span>` : '';
     const seasonalLabel = isSeasonal ? '<span class="seasonal-badge">旬</span>' : '';
+    const level = getRecipeLevel(r);
+    const levelBadge = level === 'limit'
+      ? '<span class="level-badge" style="background:rgba(122,154,173,.15);color:#5a7a8d">🆘 限界</span>'
+      : level === 'challenge'
+        ? '<span class="level-badge" style="background:rgba(196,135,122,.15);color:#a86858">🔥 挑戦</span>'
+        : level === 'easy'
+          ? '<span class="level-badge" style="background:rgba(138,173,122,.15);color:#6a8d5a">🫧 かんたん</span>'
+          : '';
     return `<div class="recipe-card${isNG ? ' ng-recipe' : ''}${isFav ? ' fav-recipe' : ''}" onclick="showRecipeDetail('${r.id}')">
       <div style="display:flex;align-items:center;gap:6px">
-        <div class="recipe-title" style="flex:1">${isNG ? '🚫 ' : ''}${r.title}${seasonalLabel}${historyLabel}</div>
+        <div class="recipe-title" style="flex:1">${isNG ? '🚫 ' : ''}${r.title}${levelBadge}${seasonalLabel}${historyLabel}</div>
         <button class="btn-fav${isFav ? ' active' : ''}" onclick="event.stopPropagation();toggleFav('${r.id}')" title="お気に入り">${isFav ? '⭐' : '☆'}</button>
         <button class="btn btn-sm ${isNG ? 'btn-danger' : 'btn-outline'}" onclick="event.stopPropagation();toggleNG('${r.id}')" style="font-size:.7rem;padding:3px 8px;white-space:nowrap" title="自動生成から除外/復帰">${isNG ? 'NG解除' : 'NG'}</button>
       </div>
@@ -2030,6 +2400,14 @@ function filterByCategory(cat, btn) {
   }
   renderRecipeList();
 }
+function filterByLevel(level, btn) {
+  currentLevelFilter = level;
+  document.querySelectorAll('#level-filters .btn-outline').forEach(b => {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  renderRecipeList();
+}
 function filterByFlavor(flavor, btn) {
   currentFlavorFilter = flavor;
   document.querySelectorAll('#flavor-filters .btn-outline').forEach(b => {
@@ -2073,9 +2451,14 @@ function showRecipeDetail(id) {
     <p style="font-size:.88rem;color:var(--text-light);margin-bottom:14px;line-height:1.5">${r.desc||''}</p>
     ${siteLink ? `<div style="margin-bottom:14px">${siteLink}</div>` : ''}
     <h4 style="font-size:.9rem;margin-bottom:6px">材料</h4>
-    <ul style="margin:0 0 14px 18px;font-size:.88rem">${ingredients.map(i=>`<li>${i.name} ${i.qty?'— '+i.qty:''}</li>`).join('')}</ul>
+    <ul style="margin:0 0 14px 18px;font-size:.88rem">${ingredients.map(i=>{
+      const links = getAffiliateLinks(i.name);
+      const linkHtml = links ? ' ' + links.map(l => `<a href="${l.url}" target="_blank" rel="noopener noreferrer sponsored" style="font-size:.7rem;color:${l.color};text-decoration:none;margin-left:4px;opacity:.7" onclick="event.stopPropagation()">${l.name}で探す</a>`).join('') : '';
+      return `<li>${i.name} ${i.qty?'— '+i.qty:''}${linkHtml}</li>`;
+    }).join('')}</ul>
     <h4 style="font-size:.9rem;margin-bottom:6px">手順</h4>
     <ol style="margin:0 0 14px 18px;font-size:.88rem;line-height:1.6">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+    ${renderRecipeGearCard(r)}
   `;
   document.getElementById('detail-modal').classList.add('show');
 }
@@ -2647,7 +3030,7 @@ function computeEfficiency(recipes) {
     </div>
     <div class="efficiency-stat">
       <div class="stat-label">時短効果</div>
-      <div class="stat-value" style="color:var(--success)">${savedTime > 0 ? '-'+savedTime+'分' : '0分'}</div>
+      <div class="stat-value" style="color:var(--success)">${savedTime > 0 ? '▲'+savedTime+'分' : '0分'}</div>
       <div class="stat-sub">${savedPct > 0 ? savedPct+'%短縮' : ''}</div>
     </div>
     <div class="efficiency-stat">
@@ -2695,11 +3078,19 @@ function toggleTimelineView(view, btn) {
   if (cookingTimeline) renderTimeline();
 }
 
+let ganttStepRegistry = [];
+function registerGanttStep(step, extra) {
+  const idx = ganttStepRegistry.length;
+  ganttStepRegistry.push({...step, ...extra});
+  return idx;
+}
+
 function renderGantt() {
   const tl = cookingTimeline;
   const container = document.getElementById('timeline-container');
   const maxTime = Math.max(...tl.map(s => s.startTime + s.duration));
   const recipes = [...new Set(tl.map(s => s.recipeName))];
+  ganttStepRegistry = [];
 
   // 料理人の行を構築（アクティブなステップのみ — パッシブ手作業は含めない）
   const cookSteps = tl.filter(s => {
@@ -2751,8 +3142,9 @@ function renderGantt() {
       const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
       const prepLabel = s.isPreStep ? `${s.prepTag||'下ごしらえ'} ` : '';
       const prepBorder = s.isPreStep ? 'border:2px dashed rgba(255,255,255,.5);' : '';
-      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${prepBorder}"
-        title="${s.recipeName}\n${prepLabel}${s.text}\n${s.startTime}分〜${s.startTime+s.duration}分（${s.duration}分間）\n${s.isPreStep?'⚡ 自動追加された下ごしらえ\n':''}${s.passive?'放置OK — 他の作業ができます':'手を使います'}">
+      const idx = registerGanttStep(s, {rowLabel: '👩‍🍳 料理人', color});
+      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${prepBorder}" onclick="showGanttDetail(${idx})"
+        title="タップで詳細 — ${s.recipeName}">
         <span class="gantt-block-title">${prepLabel}${s.recipeName}</span>
         <span class="gantt-block-desc">${s.text}</span>
         <span class="gantt-block-time">${s.startTime}〜${s.startTime+s.duration}分</span>
@@ -2772,9 +3164,9 @@ function renderGantt() {
       const width = Math.max((s.duration / maxTime) * 100, 1.5);
       const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
       const passiveStyle = s.passive ? 'opacity:.55;' : '';
-      const passiveIcon = s.passive ? '🔥 ' : '👩‍🍳 ';
-      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${passiveStyle}"
-        title="${s.recipeName}\n${passiveIcon}${s.text}\n${s.startTime}分〜${s.startTime+s.duration}分（${s.duration}分間）\n${s.passive?'⏳ 放置OK — 料理人フリー':'🖐 手を使って調理中'}">
+      const idx = registerGanttStep(s, {rowLabel: resource, color});
+      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};${passiveStyle}" onclick="showGanttDetail(${idx})"
+        title="タップで詳細 — ${s.recipeName}">
         <span class="gantt-block-title">${s.passive?'🔥':'👩‍🍳'} ${s.recipeName}</span>
         <span class="gantt-block-desc">${s.text}</span>
         <span class="gantt-block-time">${s.startTime}〜${s.startTime+s.duration}分</span>
@@ -2795,8 +3187,9 @@ function renderGantt() {
       const left = (s.startTime / maxTime) * 100;
       const width = Math.max((s.duration / maxTime) * 100, 1.5);
       const color = RECIPE_COLORS[recipes.indexOf(s.recipeName) % RECIPE_COLORS.length];
-      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};opacity:.55;border:2px dashed rgba(255,255,255,.5)"
-        title="${s.recipeName}\n${s.prepTag||''} ${s.text}\n${s.startTime}分〜${s.startTime+s.duration}分（${s.duration}分間）\n⏳ 放置OK — セットするだけ">
+      const idx = registerGanttStep(s, {rowLabel: '⏳ 放置', color});
+      return `<div class="gantt-block" style="left:${left}%;width:${width}%;background:${color};opacity:.55;border:2px dashed rgba(255,255,255,.5)" onclick="showGanttDetail(${idx})"
+        title="タップで詳細 — ${s.recipeName}">
         <span class="gantt-block-title">${s.prepTag||'⏳'} ${s.recipeName}</span>
         <span class="gantt-block-desc">${s.text}</span>
         <span class="gantt-block-time">${s.startTime}〜${s.startTime+s.duration}分</span>
@@ -2815,6 +3208,43 @@ function renderGantt() {
       ${passiveHandRow}
     </div>
   </div>`;
+}
+
+function showGanttDetail(idx) {
+  const s = ganttStepRegistry[idx];
+  if (!s) return;
+  const endTime = s.startTime + s.duration;
+  const stateChip = s.passive
+    ? '<span style="background:rgba(122,154,173,.15);color:#5a7a8d;padding:3px 10px;border-radius:10px;font-size:.75rem">⏳ 放置OK — 手が空きます</span>'
+    : '<span style="background:rgba(196,135,122,.15);color:#a86858;padding:3px 10px;border-radius:10px;font-size:.75rem">🖐 手を使って調理</span>';
+  const prepChip = s.isPreStep
+    ? `<span style="background:rgba(201,169,110,.15);color:#8a7038;padding:3px 10px;border-radius:10px;font-size:.75rem;margin-left:6px">⚡ ${s.prepTag||'下ごしらえ'}</span>`
+    : '';
+  const rowChip = s.rowLabel
+    ? `<span style="background:rgba(0,0,0,.05);color:var(--text-light);padding:3px 10px;border-radius:10px;font-size:.75rem;margin-left:6px">${s.rowLabel}</span>`
+    : '';
+  const content = document.getElementById('gantt-detail-content');
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:14px;height:14px;border-radius:4px;background:${s.color||'#888'}"></div>
+      <div style="font-weight:700;font-size:1.05rem;color:var(--text)">${s.recipeName||'（調理ステップ）'}</div>
+    </div>
+    <div style="margin-bottom:14px">${stateChip}${prepChip}${rowChip}</div>
+    <div style="background:var(--bg);padding:12px 14px;border-radius:12px;margin-bottom:14px;line-height:1.6;color:var(--text)">
+      ${s.text||'—'}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
+      <div><div style="font-size:.7rem;color:var(--text-light)">開始</div><div style="font-weight:700;color:var(--text)">${s.startTime}分</div></div>
+      <div><div style="font-size:.7rem;color:var(--text-light)">終了</div><div style="font-weight:700;color:var(--text)">${endTime}分</div></div>
+      <div><div style="font-size:.7rem;color:var(--text-light)">所要</div><div style="font-weight:700;color:var(--text)">${s.duration}分間</div></div>
+    </div>
+    ${s.isPreStep ? '<div style="margin-top:14px;font-size:.8rem;color:var(--text-light);background:rgba(201,169,110,.08);padding:10px 12px;border-radius:10px">⚡ これは調理をスムーズにするために自動追加された下ごしらえステップです</div>' : ''}
+  `;
+  document.getElementById('gantt-detail-modal').classList.add('show');
+}
+
+function closeGanttDetail() {
+  document.getElementById('gantt-detail-modal').classList.remove('show');
 }
 
 function renderStepList() {
@@ -3049,9 +3479,20 @@ function stopCookingTimer() {
 // ============================
 // 買い物リスト
 // ============================
-function generateShoppingFromWeek() {
+function getShoppingTargetDays(scope) {
+  const todayDow = (new Date().getDay() + 6) % 7;
+  if (scope === 'today') return [todayDow];
+  if (scope === 'tomorrow') return [(todayDow + 1) % 7];
+  if (scope === '2days') return [todayDow, (todayDow + 1) % 7];
+  if (scope === '3days') return [todayDow, (todayDow + 1) % 7, (todayDow + 2) % 7];
+  return [0,1,2,3,4,5,6];
+}
+
+function generateShoppingFromScope() {
+  const scope = document.getElementById('shopping-scope-select')?.value || 'week';
+  const targetDays = getShoppingTargetDays(scope);
   const ingredientMap = {};
-  for (let i = 0; i < 7; i++) {
+  targetDays.forEach(i => {
     SLOTS.forEach(slot => {
       (weekPlan[i][slot]||[]).forEach(item => {
         const recipe = getRecipeById(item.id);
@@ -3068,7 +3509,7 @@ function generateShoppingFromWeek() {
         });
       });
     });
-  }
+  });
 
   shoppingList = Object.values(ingredientMap).map(item => ({
     name: item.name,
@@ -3078,8 +3519,11 @@ function generateShoppingFromWeek() {
   }));
   saveState(); updateShoppingDisplay();
   switchTab('shopping', document.querySelectorAll('.tab-btn')[4]);
-  showToast(`${shoppingList.length}件の材料を買い物リストに追加しました`);
+  const scopeLabel = {today:'今日', tomorrow:'明日', '2days':'今日＋明日', '3days':'3日分', week:'週間まとめ'}[scope];
+  showToast(`${scopeLabel}の材料 ${shoppingList.length}件を買い物リストに追加しました`);
 }
+
+function generateShoppingFromWeek() { generateShoppingFromScope(); }
 
 function addShoppingItem() {
   const name = document.getElementById('new-item-name').value.trim();
@@ -3132,16 +3576,23 @@ function updateShoppingDisplay() {
 
   const sorted = [...shoppingList.entries()].sort((a,b) => a[1].checked - b[1].checked);
 
-  list.innerHTML = sorted.map(([idx, item]) => `
+  list.innerHTML = sorted.map(([idx, item]) => {
+    const links = getAffiliateLinks(item.name);
+    const linkHtml = links && !item.checked
+      ? `<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener noreferrer sponsored" style="font-size:.7rem;color:${l.color};text-decoration:none;padding:2px 8px;border-radius:8px;background:${l.color}15">🔍 ${l.name}で探す</a>`).join('')}</div>`
+      : '';
+    return `
     <div class="shopping-item ${item.checked?'checked':''}">
       <input type="checkbox" ${item.checked?'checked':''} onchange="toggleShoppingItem(${idx})">
       <div class="shopping-item-content">
         <div class="shopping-item-name">${item.name}</div>
         ${item.qty ? `<div class="shopping-item-qty">${item.qty}</div>` : ''}
         ${item.source ? `<div class="shopping-item-source">${item.source}</div>` : ''}
+        ${linkHtml}
       </div>
       <button class="remove-btn" onclick="removeShoppingItem(${idx})">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('') + renderMealKitCard('shopping');
 }
 
 // ============================
@@ -3184,13 +3635,33 @@ function updateNutrition() {
   const maxVal = scope === 'week' ? 28 : 4;
   const idealMin = scope === 'week' ? 10 : 1.5;
 
+  const suggestions = {
+    protein: ['ゆで卵1個', '納豆1パック', 'ギリシャヨーグルト', 'サラダチキン', '豆腐半丁', 'チーズ1切れ'],
+    vegetable: ['ミニトマト3個', 'カット野菜サラダ', '冷凍ブロッコリー', 'バナナ1本', 'オートミール', 'わかめスープ'],
+    carb: ['おにぎり1個', 'バナナ1本', 'シリアル', '全粒粉トースト'],
+    other: ['ヨーグルト', '牛乳コップ1杯', 'チーズ1切れ', '豆乳']
+  };
+
   const alertsEl = document.getElementById('nutrition-alerts');
   let alerts = '';
   if (recipes.length === 0) {
     alerts = '<div class="nutrition-alert warn">献立にレシピを追加すると栄養バランスが表示されます</div>';
   } else {
     Object.keys(totals).forEach(key => {
-      if (totals[key] < idealMin) alerts += `<div class="nutrition-alert warn">${labels[key]}が少なめです</div>`;
+      if (totals[key] < idealMin) {
+        const picks = suggestions[key].slice(0, 3);
+        const pickHtml = picks.map(name => {
+          const links = getAffiliateLinks(name);
+          if (!links) return `<span style="display:inline-block;margin-right:4px">${name}</span>`;
+          // 先頭のリンク1つだけ小さく貼る（アイコンで）
+          const topLink = links[0];
+          return `<span style="display:inline-block;margin-right:8px">${name} <a href="${topLink.url}" target="_blank" rel="noopener noreferrer sponsored" style="font-size:.7rem;color:${topLink.color};text-decoration:none;opacity:.7" onclick="event.stopPropagation()">🔍</a></span>`;
+        }).join('');
+        alerts += `<div class="nutrition-alert warn">
+          <div style="font-weight:600">⚠️ ${labels[key]}が少なめです</div>
+          <div style="margin-top:4px;font-size:.82rem;opacity:.85">💡 プラス1品に: ${pickHtml}</div>
+        </div>`;
+      }
     });
     if (!alerts) alerts = '<div class="nutrition-alert good">バランスが良好です</div>';
   }
@@ -3223,7 +3694,7 @@ function drawRadarChart(totals, maxVal, labels, colors) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  const cx = W/2, cy = H/2, radius = Math.min(W,H)/2 - 40;
+  const cx = W/2, cy = H/2, radius = Math.min(W,H)/2 - 60;
 
   ctx.clearRect(0, 0, W, H);
 
@@ -3251,9 +3722,12 @@ function drawRadarChart(totals, maxVal, labels, colors) {
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y);
     ctx.strokeStyle = 'rgba(0,0,0,.1)'; ctx.stroke();
 
-    const lx = cx + Math.cos(angle) * (radius + 22);
-    const ly = cy + Math.sin(angle) * (radius + 22);
-    ctx.fillStyle = '#555'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lx = cx + Math.cos(angle) * (radius + 18);
+    const ly = cy + Math.sin(angle) * (radius + 18);
+    const cosA = Math.cos(angle), sinA = Math.sin(angle);
+    ctx.fillStyle = '#555'; ctx.font = '11px sans-serif';
+    ctx.textAlign = Math.abs(cosA) < 0.3 ? 'center' : (cosA > 0 ? 'left' : 'right');
+    ctx.textBaseline = Math.abs(sinA) < 0.3 ? 'middle' : (sinA > 0 ? 'top' : 'bottom');
     ctx.fillText(labels[key], lx, ly);
   });
 
@@ -3326,7 +3800,7 @@ async function sendToNotion() {
 // ============================
 // 設定
 // ============================
-function openSettings() { document.getElementById('settings-modal').classList.add('show'); }
+function openSettings() { document.getElementById('settings-modal').classList.add('show'); loadAffiliateUI(); }
 function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
 
 // ============================
@@ -3366,6 +3840,28 @@ function updateThemeIcon() {
 }
 // テーマは最初に初期化（DOMContentLoaded前でも実行）
 initTheme();
+</script>
+
+<footer id="app-footer" style="max-width:720px;margin:40px auto 20px;padding:16px;text-align:center;font-size:.72rem;color:var(--text-light);line-height:1.7;opacity:.7">
+  <div style="margin-bottom:10px">
+    <a href="./blog/" style="color:var(--text-light);text-decoration:none;margin:0 8px">📝 献立ラボ(ブログ)</a>
+  </div>
+  <div id="affiliate-disclosure" style="display:none">
+    このサイトには楽天アフィリエイト・Amazonアソシエイト・プログラムによるリンクが含まれています。<br>
+    リンク経由のお買い物により、運営者に紹介料が支払われる場合があります。価格はリンク経由でも変わりません。<br>
+    リンクが不要な方は設定から「リンクを表示しない」を選択してください。
+  </div>
+</footer>
+<script>
+(function() {
+  try {
+    const s = localStorage.getItem('v3_affiliate');
+    const aff = s ? JSON.parse(s) : {};
+    const show = !aff.disabled && (aff.rakutenId || aff.amazonTag);
+    const d = document.getElementById('affiliate-disclosure');
+    if (d && show) d.style.display = 'block';
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://meal-planner-topaz-delta.vercel.app/blog/sitemap.xml

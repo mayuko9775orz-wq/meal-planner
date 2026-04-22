@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>段取りが苦手な私が、発達障害向けの献立アプリを作った理由 | 献立ラボ</title>
+<meta name="description" content="ADHDとASDの特性を持つ当事者が、日々の料理で感じた「無理」を減らすために献立アプリを作りました。段取り障害・選択疲労・ワーキングメモリの壁との向き合い方の記録。">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://meal-planner-topaz-delta.vercel.app/blog/posts/001-why-i-built-this.html">
+
+<!-- OGP -->
+<meta property="og:type" content="article">
+<meta property="og:title" content="段取りが苦手な私が、発達障害向けの献立アプリを作った理由">
+<meta property="og:description" content="ADHDとASDの特性を持つ当事者が、日々の料理で感じた「無理」を減らすために献立アプリを作りました。">
+<meta property="og:url" content="https://meal-planner-topaz-delta.vercel.app/blog/posts/001-why-i-built-this.html">
+<meta property="og:image" content="https://meal-planner-topaz-delta.vercel.app/blog/assets/og-default.svg">
+<meta property="og:locale" content="ja_JP">
+<meta property="article:published_time" content="2026-04-22T00:00:00+09:00">
+<meta property="article:author" content="献立ラボ">
+<meta property="article:tag" content="ADHD">
+<meta property="article:tag" content="発達障害">
+<meta property="article:tag" content="料理">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="段取りが苦手な私が、発達障害向けの献立アプリを作った理由">
+<meta name="twitter:description" content="ADHDとASDの特性を持つ当事者が作った料理アプリの話">
+<meta name="twitter:image" content="https://meal-planner-topaz-delta.vercel.app/blog/assets/og-default.svg">
+
+<!-- 構造化データ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "段取りが苦手な私が、発達障害向けの献立アプリを作った理由",
+  "description": "ADHDとASDの特性を持つ当事者が、日々の料理で感じた「無理」を減らすために献立アプリを作りました。",
+  "image": "https://meal-planner-topaz-delta.vercel.app/blog/assets/og-default.svg",
+  "datePublished": "2026-04-22T00:00:00+09:00",
+  "dateModified": "2026-04-22T00:00:00+09:00",
+  "author": { "@type": "Person", "name": "献立ラボ" },
+  "publisher": {
+    "@type": "Organization",
+    "name": "献立ラボ",
+    "logo": { "@type": "ImageObject", "url": "https://meal-planner-topaz-delta.vercel.app/blog/assets/og-default.svg" }
+  },
+  "mainEntityOfPage": "https://meal-planner-topaz-delta.vercel.app/blog/posts/001-why-i-built-this.html"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type":"ListItem","position":1,"name":"献立ラボ","item":"https://meal-planner-topaz-delta.vercel.app/blog/"},
+    {"@type":"ListItem","position":2,"name":"段取りが苦手な私が、発達障害向けの献立アプリを作った理由"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1 class="site-title"><a href="../">🍳 献立ラボ</a></h1>
+  <p class="site-tagline">段取りが苦手でも、料理と暮らしをちょっと楽に</p>
+</header>
+
+<main>
+  <nav class="breadcrumb" aria-label="パンくず">
+    <a href="../">献立ラボ</a> › <span>このエッセイ</span>
+  </nav>
+
+  <article>
+    <header class="article-header">
+      <h1 class="article-title">段取りが苦手な私が、発達障害向けの献立アプリを作った理由</h1>
+      <div class="article-meta">
+        <time datetime="2026-04-22">2026年4月22日</time>
+        <span>読了 約6分</span>
+        <span class="post-tag">エッセイ</span>
+        <span class="post-tag">ADHD</span>
+      </div>
+    </header>
+
+    <nav class="toc" aria-label="目次">
+      <div class="toc-title">目次</div>
+      <ul>
+        <li><a href="#ch1">献立を考えるだけで、もう疲れる</a></li>
+        <li><a href="#ch2">私の「料理ができない」の正体</a></li>
+        <li><a href="#ch3">アプリに落とした3つの仕組み</a></li>
+        <li><a href="#ch4">「がんばらない日」という選択肢</a></li>
+        <li><a href="#ch5">これから</a></li>
+      </ul>
+    </nav>
+
+    <div class="article-body">
+      <p>
+        「今日の夕飯、何にしよう」。
+        この一言で、もう疲れてしまう日があります。
+      </p>
+
+      <p>
+        私はADHDとASDの特性を持っていて、料理の<strong>「段取り」</strong>が特に苦手です。
+        献立を決める、買い物リストを書く、食材を冷蔵庫から出す、手順を思い出す、並行してコンロとレンジを動かす。
+        料理って、恐ろしい量のタスクが同時に走るんですよね。
+      </p>
+
+      <p>
+        レシピサイトは世の中に山ほどあります。でも、<strong>「料理する前の段階」で詰まっている人</strong>に向けたツールはほとんどない。
+        だから自分のために作りました。その話を少し書かせてください。
+      </p>
+
+      <h2 id="ch1">献立を考えるだけで、もう疲れる</h2>
+
+      <p>
+        スーパーで30分立ち尽くしたことがあります。
+        「何を買うか」が決められない。
+        頭の中で献立の候補がぐるぐる回って、「これを買うとあれが余るな」「でもあれは先週食べたな」「栄養バランスは」と考えているうちに、何も決まらないまま時間が過ぎていく。
+      </p>
+
+      <p>
+        結局コンビニで済ませて帰る日が何度もありました。
+        自分を責めて、でも責めてもどうにもならない。
+      </p>
+
+      <blockquote>
+        選択肢が多すぎると、人は決められなくなる。これは「選択のパラドックス」として研究でも知られています。ADHDの場合はさらにその傾向が強いと言われています。
+      </blockquote>
+
+      <h2 id="ch2">私の「料理ができない」の正体</h2>
+
+      <p>
+        自分の特性を整理してみると、「料理ができない」の中身はこれでした:
+      </p>
+
+      <ul>
+        <li><strong>ワーキングメモリが弱い</strong> — 「次に何をするか」を頭の中で保持できない</li>
+        <li><strong>時間の感覚がぼんやり</strong> — 10分で終わると思った作業が30分かかる(時間盲)</li>
+        <li><strong>並行タスクが苦手</strong> — コンロとレンジを同時に動かすと片方を忘れる</li>
+        <li><strong>決定疲労が早い</strong> — 献立を決める時点で意志力を使い切る</li>
+        <li><strong>感覚過敏</strong> — 疲れてる日は食材の匂い・油の音が辛い</li>
+      </ul>
+
+      <p>
+        気合いが足りないわけでも、努力不足でもない。
+        脳の作りがそうなっている。
+        だったら、<strong>脳の弱いところをアプリに肩代わりさせればいい</strong>と思いました。
+      </p>
+
+      <h2 id="ch3">アプリに落とした3つの仕組み</h2>
+
+      <h3>1. 献立は自動で決めてもらう</h3>
+      <p>
+        ボタン一つで1週間分の献立を生成します。
+        冷蔵庫に何があるか、何を食べたいか、考えなくていい。
+        自分で決めたければ後から入れ替えできますが、「とりあえず決まってる」状態にすることを最優先にしています。
+      </p>
+
+      <h3>2. 並行調理をアプリが考える</h3>
+      <p>
+        複数のレシピを同時進行するとき、「コンロ1で煮込んでる間にレンジで副菜を温めて、手が空く5分でサラダを切る」みたいな段取りを、ガントチャート形式で自動で作ります。
+        これは脳の外にワーキングメモリを置く、という発想です。
+      </p>
+
+      <h3>3. 「今やること」だけを大きく表示する</h3>
+      <p>
+        調理中は<strong>NOWモード</strong>という画面に切り替えられます。
+        今のステップだけが画面いっぱいに表示されて、次のステップは小さく予告表示。
+        残り時間もバーで見える。「次は何だっけ」と毎秒考えなくていい。
+      </p>
+
+      <h2 id="ch4">「がんばらない日」という選択肢</h2>
+
+      <p>
+        先日、<strong>「がんばらない日モード」</strong>という機能を追加しました。
+        スイッチを入れると、献立がごくシンプルなものに変わり、<strong>「限界レシピ」</strong>だけが提案されます。
+      </p>
+
+      <p>
+        限界レシピというのは、例えばこういうものです:
+      </p>
+
+      <ul>
+        <li>冷凍カット野菜と豚こまを鍋に入れて煮るだけの豚汁</li>
+        <li>耐熱ボウルに冷凍ブロッコリーとツナ缶を入れてレンジで5分</li>
+        <li>ごはんに納豆とキムチをのせてごま油を回しかけるだけ</li>
+      </ul>
+
+      <p>
+        包丁を使わない、冷凍食品を使う、調味料は3種以内。
+        「ちゃんとしたごはん」じゃなくてもいい。
+        <strong>今日は食べられただけでえらい</strong>、という日があっていい。
+      </p>
+
+      <p>
+        料理にかかるハードルは、人によって全然違います。
+        健康な人にとっての「簡単」が、疲れた当事者にとっては崖だったりする。
+        その崖を、アプリで平地にしたい。
+      </p>
+
+      <h2 id="ch5">これから</h2>
+
+      <p>
+        このアプリはまだ小さな個人プロジェクトで、機能もまだ発展途上です。
+        でも、同じように「段取りで詰まる」人に届いて、少しでも楽になる日が作れたら嬉しい。
+      </p>
+
+      <p>
+        このブログでは、アプリのアップデートはもちろん、<strong>発達障害と食にまつわる研究や、当事者として考えていること</strong>をゆっくり書いていこうと思います。
+      </p>
+
+      <p>
+        もし「わかる」と思ってくれたら、アプリを覗いてみてください。<br>
+        無理なく、一緒にやっていきましょう。
+      </p>
+    </div>
+
+    <div class="app-cta">
+      <h3>📱 献立プランナーを試す</h3>
+      <p>この記事で紹介した機能が全部入ったアプリです。無料、会員登録不要。</p>
+      <a href="../../" class="btn">アプリを開く →</a>
+    </div>
+
+    <div class="author-box">
+      <div class="author-avatar">🌿</div>
+      <div>
+        <div class="author-name">献立ラボ</div>
+        <p class="author-bio">ADHD・ASD当事者。段取りが苦手でも料理ができるアプリを作りました。食と暮らしの工夫を発信しています。</p>
+      </div>
+    </div>
+
+    <section class="related">
+      <h3>関連する記事</h3>
+      <div class="related-grid">
+        <div class="related-card">
+          <a href="./002-adhd-and-cooking.html">
+            <div>ADHDと料理: ワーキングメモリを「外部化」するという戦略</div>
+            <div class="post-meta"><span class="post-tag">研究</span></div>
+          </a>
+        </div>
+        <div class="related-card">
+          <a href="./003-limit-recipes.html">
+            <div>今日はこれでOK。がんばらない日の「限界レシピ」10選</div>
+            <div class="post-meta"><span class="post-tag">実用</span></div>
+          </a>
+        </div>
+      </div>
+    </section>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div><a href="../">← 記事一覧に戻る</a></div>
+  <div style="margin-top:10px">© 2026 献立ラボ</div>
+</footer>
+
+</body>
+</html>
