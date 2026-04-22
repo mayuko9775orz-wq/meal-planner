@@ -10,7 +10,35 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
-<title>献立プランナー v3</title>
+<title>献立プランナー | 発達障害(ADHD/ASD)当事者のための献立&段取り支援アプリ</title>
+<meta name="description" content="発達障害(ADHD/ASD)当事者や、段取りが苦手な人のための献立・料理アプリ。自動献立生成、並行調理タイムライン、限界レシピ、がんばらない日モード。無料で使えます。">
+<meta name="keywords" content="発達障害,献立,ADHD,ASD,料理,段取り,ワーキングメモリ,限界レシピ,時短">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://mayuko9775orz-wq.github.io/meal-planner/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="献立プランナー">
+<meta property="og:title" content="献立プランナー | 発達障害当事者のための献立&段取り支援アプリ">
+<meta property="og:description" content="段取りが苦手な人のための献立アプリ。自動献立生成・並行調理タイムライン・限界レシピ。">
+<meta property="og:url" content="https://mayuko9775orz-wq.github.io/meal-planner/">
+<meta property="og:image" content="https://mayuko9775orz-wq.github.io/meal-planner/blog/assets/og-default.svg">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="献立プランナー | 発達障害当事者のための献立アプリ">
+<meta name="twitter:description" content="段取りが苦手でも料理がうまくいく、ADHD/ASD当事者向けアプリ">
+<meta name="twitter:image" content="https://mayuko9775orz-wq.github.io/meal-planner/blog/assets/og-default.svg">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "献立プランナー",
+  "description": "発達障害(ADHD/ASD)当事者のための献立&段取り支援アプリ",
+  "url": "https://mayuko9775orz-wq.github.io/meal-planner/",
+  "applicationCategory": "LifestyleApplication",
+  "operatingSystem": "Any",
+  "inLanguage": "ja-JP",
+  "offers": {"@type":"Offer","price":"0","priceCurrency":"JPY"}
+}
+</script>
 <style>
   :root {
     --primary: #8a9a7b;
@@ -1038,6 +1066,13 @@ let cookingMode = 'normal'; // 'normal' | 'limit' | 'challenge'
 // ブログ(献立ラボ)の掲載記事メタデータ
 // 新しい記事を追加したらここに追記 → 今日タブの横スクロールに自動反映
 const BLOG_ARTICLES = [
+  {
+    category: '実用',
+    title: '発達障害のための献立作り | 段取りが苦手でもうまくいく7つの工夫',
+    excerpt: '献立を考えるだけで疲れる、冷蔵庫の前で固まる。発達障害の脳と相性のいい献立作り7つの工夫を当事者視点で解説します。',
+    url: './blog/posts/004-hattatsu-shogai-kondate.html',
+    readTime: '8分'
+  },
   {
     category: 'エッセイ',
     title: '段取りが苦手な私が、発達障害向けの献立アプリを作った理由',
