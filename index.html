@@ -808,6 +808,7 @@
     <div id="nutrition-alerts"></div>
     <canvas id="nutrition-chart" width="300" height="300" style="display:block;margin:0 auto 16px;max-width:300px;width:100%"></canvas>
     <div id="nutrition-summary" class="nutrition-summary"></div>
+    <div id="nutrition-books"></div>
   </div>
 </div>
 
@@ -3758,6 +3759,12 @@ function updateNutrition() {
   }).join('');
 
   drawRadarChart(totals, maxVal, labels, colors);
+
+  // 控えめに書籍紹介(書籍タグの厳選商品があれば表示)
+  const booksEl = document.getElementById('nutrition-books');
+  if (booksEl) {
+    booksEl.innerHTML = renderCuratedProductCards(['書籍','発達障害','一般'], '📚 読みたい人へ');
+  }
 }
 
 function guessNutrition(recipe) {
