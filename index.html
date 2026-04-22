@@ -907,47 +907,36 @@
     <input type="text" id="notion-page-id" placeholder="page_id">
     <button class="btn" onclick="saveNotionSettings()" style="width:100%;margin-top:8px">保存</button>
 
-    <h4 style="margin:24px 0 8px;font-size:.9rem">🛒 アフィリエイトリンク(任意)</h4>
-    <div style="font-size:.75rem;color:var(--text-light);margin-bottom:8px;line-height:1.5">
-      材料や買い物リストから通販サイトを検索できるようになります。<br>
-      開発者支援として、登録IDを設定するとアフィリエイトリンクになります。<br>
-      <strong>完全オフ</strong>にしたい場合は「リンクを表示しない」にチェックを入れてください。
+    <h4 style="margin:24px 0 8px;font-size:.9rem">📣 広告表示について</h4>
+    <div style="font-size:.75rem;color:var(--text-light);margin-bottom:8px;line-height:1.6">
+      このアプリには、運営維持のため一部にアフィリエイトリンクを含む商品紹介が表示されます。<br>
+      煩わしい場合は下のトグルでオフにできます。
     </div>
-    <label>楽天アフィリエイトID</label>
-    <input type="text" id="rakuten-affiliate-id" placeholder="例: 2001xxxx.xxxxxxxx.xxxxxxxx.xxxxxxxx">
-    <label>Amazonアソシエイトタグ(任意)</label>
-    <input type="text" id="amazon-associate-tag" placeholder="例: yourname-22">
-    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-weight:normal">
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:normal;padding:10px;border:1px solid var(--border);border-radius:10px">
       <input type="checkbox" id="affiliate-disabled" style="width:auto;margin:0">
-      🚫 リンクを一切表示しない(プライバシーモード)
+      🚫 すべての広告・商品紹介を表示しない
     </label>
-
-    <h4 style="margin:20px 0 8px;font-size:.85rem">🍱 宅配サービスの提案リンク(任意)</h4>
-    <div style="font-size:.72rem;color:var(--text-light);margin-bottom:8px;line-height:1.5">
-      「がんばらない日」や献立が空の日に、さりげなく提案カードを表示します。<br>
-      もしもアフィリエイト等で発行したURLを貼ると、アフィリエイトリンクになります。
-    </div>
-    <label>🍱 宅配弁当(ナッシュ等)のリンクURL</label>
-    <input type="text" id="nosh-url" placeholder="https://... (空欄で nosh.jp にリンク)">
-    <label>🥬 ミールキット(Oisix等)のリンクURL</label>
-    <input type="text" id="oisix-url" placeholder="https://... (空欄で oisix.com にリンク)">
-    <label>🍲 つくりおきサービスのリンクURL</label>
-    <input type="text" id="tsukurioki-url" placeholder="https://... (空欄で tsukurioki.jp にリンク)">
-    <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-weight:normal">
+    <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:normal;padding:10px;border:1px solid var(--border);border-radius:10px">
       <input type="checkbox" id="mealkit-cards-disabled" style="width:auto;margin:0">
-      📴 宅配提案カードを表示しない
+      📴 宅配サービスの提案カードだけオフにする
     </label>
 
-    <h4 style="margin:20px 0 8px;font-size:.85rem">💎 厳選商品リンク(任意)</h4>
-    <div style="font-size:.72rem;color:var(--text-light);margin-bottom:8px;line-height:1.5">
-      自分が実際に使って推せる商品のアフィリエイトURLを登録できます。<br>
-      レシピやモードの文脈に合致したときに「あると便利」として表示されます。<br>
-      1行1商品、<strong>「商品名 | タグ(カンマ区切り) | URL」</strong>の形式。<br>
-      タグ例: <code>ホットクック</code> <code>限界</code> <code>挑戦</code> <code>冷凍</code> <code>オーブン</code> <code>一般</code>
+    <!-- 開発者用フィールド(通常は非表示、URLに ?dev=1 で表示) -->
+    <div id="dev-affiliate-fields" style="display:none">
+      <h4 style="margin:24px 0 8px;font-size:.85rem;color:var(--text-light)">🔧 開発者設定</h4>
+      <label style="font-size:.75rem">楽天アフィリエイトID</label>
+      <input type="text" id="rakuten-affiliate-id" placeholder="531541c1.xxxx..." style="font-size:.75rem">
+      <label style="font-size:.75rem">Amazonアソシエイトタグ</label>
+      <input type="text" id="amazon-associate-tag" placeholder="xxxxx-22" style="font-size:.75rem">
+      <label style="font-size:.75rem">ナッシュ URL</label>
+      <input type="text" id="nosh-url" placeholder="https://..." style="font-size:.75rem">
+      <label style="font-size:.75rem">Oisix URL</label>
+      <input type="text" id="oisix-url" placeholder="https://..." style="font-size:.75rem">
+      <label style="font-size:.75rem">つくりおき URL</label>
+      <input type="text" id="tsukurioki-url" placeholder="https://..." style="font-size:.75rem">
+      <label style="font-size:.75rem">厳選商品(商品名 | タグ | URL)</label>
+      <textarea id="curated-products" rows="4" style="width:100%;font-family:inherit;font-size:.7rem"></textarea>
     </div>
-    <textarea id="curated-products" rows="5" placeholder="例:
-ホットクック KN-HW10G | ホットクック,一人暮らし | https://hb.afl.rakuten.co.jp/ichiba/...
-ミニ冷蔵庫 50L | 限界,冷凍,一人暮らし | https://hb.afl.rakuten.co.jp/ichiba/..." style="width:100%;font-family:inherit;font-size:.8rem"></textarea>
 
     <button class="btn" onclick="saveAffiliateSettings()" style="width:100%;margin-top:12px">保存</button>
   </div>
@@ -985,7 +974,28 @@ let favRecipes = new Set(); // お気に入りレシピ
 let recipeHistory = []; // レシピ使用履歴 [{id, date, slot}, ...]
 let slotSourceFilter = 'all';
 let cookingMode = 'normal'; // 'normal' | 'limit' | 'challenge'
-let affiliateSettings = {rakutenId:'', amazonTag:'', disabled:false, noshUrl:'', oisixUrl:'', tsukuriokiUrl:'', mealkitDisabled:false, curatedProducts:[]};
+// 開発者によって埋め込まれるアフィリエイト設定(エンドユーザーには非表示)
+const DEFAULT_AFFILIATE = {
+  rakutenId: '531541c1.a6283ae8.531541c2.24304e3e',
+  amazonTag: '', // 未登録
+  noshUrl: '', // もしもアフィ URL取得後に記入
+  oisixUrl: '',
+  tsukuriokiUrl: '',
+  disabled: false,
+  mealkitDisabled: false,
+  curatedProducts: [
+    {name:'シャープ ホットクック KN-HW10G 1L', tags:['ホットクック','一人暮らし','一般'], url:'https://hb.afl.rakuten.co.jp/ichiba/531541c1.a6283ae8.531541c2.24304e3e/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ftno%2Fkn-hw10g%2F'},
+    {name:'シャープ ホットクック KN-HW24H 2.4L', tags:['ホットクック','挑戦','家族','一般'], url:'https://hb.afl.rakuten.co.jp/ichiba/53154afc.3ef2f956.53154afd.cfb27f8f/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fe-cutestyle%2Fp000000897760%2F'},
+    {name:'シャープ ヘルシオ AX-N1B 30L', tags:['オーブン','挑戦','家族','一般'], url:'https://hb.afl.rakuten.co.jp/ichiba/53157570.48afd555.53157571.78b1dbad/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fsuperdeal%2F15704axn1bb2508%2F'},
+    {name:'シャープ もっとクック TJU2A(ホットクック用2段調理)', tags:['ホットクック','一般'], url:'https://hb.afl.rakuten.co.jp/ichiba/5315795f.248ced6b.53157960.5fc0f5d5/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fr-kojima%2F4550556122856%2F'},
+    {name:'ミニ冷蔵庫 50L(セカンド冷凍庫用)', tags:['限界','冷凍','一人暮らし'], url:'https://hb.afl.rakuten.co.jp/ichiba/53154f51.f4f5320d.53154f52.0249df6f/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fyozakura%2Frefrigerator04%2F'},
+    {name:'アイリスオーヤマ 電気圧力鍋 3L', tags:['挑戦','限界','時短','一般'], url:'https://hb.afl.rakuten.co.jp/ichiba/53154e90.eb8a4e1c.53154e91.02418dd3/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Firisplaza-r%2F286224%2F'},
+    {name:'多動脳 ADHDの真実(アンデシュ・ハンセン)', tags:['書籍','adhd','発達障害'], url:'https://hb.afl.rakuten.co.jp/ichiba/53155dde.d4ebc3b0.53155ddf.956083b7/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbook%2F18174671%2F'},
+    {name:'い・ろ・は・す ラベルレス 24本', tags:['水分補給','備蓄','限界','熱中症','一般'], url:'https://hb.afl.rakuten.co.jp/ichiba/531564b3.abbca0ab.531564b4.ab002e4f/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fsoukaidrink%2F4902102139410%2F'},
+    {name:'サントリー金麦 糖質75%オフ 48本(晩酌健康派)', tags:['晩酌','挑戦','大人'], url:'https://hb.afl.rakuten.co.jp/ichiba/531567d4.3770b7c2.531567d5.9b260c60/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fliquor-boss%2F09094c2%2F'}
+  ]
+};
+let affiliateSettings = {...DEFAULT_AFFILIATE};
 
 // ============================
 // 旬の食材マップ
@@ -1389,8 +1399,19 @@ function loadState() {
     if (recipeHistory.length > 200) recipeHistory = recipeHistory.slice(-200);
     const mode = localStorage.getItem('v3_mode');
     if (mode) cookingMode = mode;
-    const aff = localStorage.getItem('v3_affiliate');
-    if (aff) affiliateSettings = {...affiliateSettings, ...JSON.parse(aff)};
+    // 開発者モード時のみ、localStorage の v3_affiliate から詳細設定を復元
+    const devMode = new URLSearchParams(window.location.search).get('dev') === '1';
+    if (devMode) {
+      const aff = localStorage.getItem('v3_affiliate');
+      if (aff) affiliateSettings = {...DEFAULT_AFFILIATE, ...JSON.parse(aff)};
+    }
+    // エンドユーザーは disabled/mealkitDisabled のみ反映
+    const userPrefs = localStorage.getItem('v3_affiliate_user');
+    if (userPrefs) {
+      const u = JSON.parse(userPrefs);
+      if (typeof u.disabled === 'boolean') affiliateSettings.disabled = u.disabled;
+      if (typeof u.mealkitDisabled === 'boolean') affiliateSettings.mealkitDisabled = u.mealkitDisabled;
+    }
   } catch(e) { console.error('loadState error', e); }
 }
 
@@ -1415,18 +1436,32 @@ function serializeCuratedProducts(products) {
 }
 
 function saveAffiliateSettings() {
-  affiliateSettings = {
-    rakutenId: (document.getElementById('rakuten-affiliate-id').value || '').trim(),
-    amazonTag: (document.getElementById('amazon-associate-tag').value || '').trim(),
+  // エンドユーザーはdisabledとmealkitDisabledのみ変更可能
+  const userPrefs = {
     disabled: document.getElementById('affiliate-disabled').checked,
-    noshUrl: (document.getElementById('nosh-url').value || '').trim(),
-    oisixUrl: (document.getElementById('oisix-url').value || '').trim(),
-    tsukuriokiUrl: (document.getElementById('tsukurioki-url').value || '').trim(),
-    mealkitDisabled: document.getElementById('mealkit-cards-disabled').checked,
-    curatedProducts: parseCuratedProducts(document.getElementById('curated-products').value)
+    mealkitDisabled: document.getElementById('mealkit-cards-disabled').checked
   };
-  localStorage.setItem('v3_affiliate', JSON.stringify(affiliateSettings));
-  showToast('アフィリエイト設定を保存しました');
+  // 開発者モード(?dev=1)のときだけ、詳細フィールドも保存
+  const devMode = new URLSearchParams(window.location.search).get('dev') === '1';
+  if (devMode) {
+    const val = id => (document.getElementById(id)?.value || '').trim();
+    affiliateSettings = {
+      ...DEFAULT_AFFILIATE,
+      ...userPrefs,
+      rakutenId: val('rakuten-affiliate-id') || DEFAULT_AFFILIATE.rakutenId,
+      amazonTag: val('amazon-associate-tag') || DEFAULT_AFFILIATE.amazonTag,
+      noshUrl: val('nosh-url') || DEFAULT_AFFILIATE.noshUrl,
+      oisixUrl: val('oisix-url') || DEFAULT_AFFILIATE.oisixUrl,
+      tsukuriokiUrl: val('tsukurioki-url') || DEFAULT_AFFILIATE.tsukuriokiUrl,
+      curatedProducts: parseCuratedProducts(document.getElementById('curated-products').value) || DEFAULT_AFFILIATE.curatedProducts
+    };
+    localStorage.setItem('v3_affiliate', JSON.stringify(affiliateSettings));
+  } else {
+    // 通常ユーザー: ユーザー設定のみ保存
+    affiliateSettings = {...DEFAULT_AFFILIATE, ...userPrefs};
+    localStorage.setItem('v3_affiliate_user', JSON.stringify(userPrefs));
+  }
+  showToast('設定を保存しました');
   closeSettings();
   renderRecipeList();
   updateShoppingDisplay();
@@ -1436,14 +1471,22 @@ function saveAffiliateSettings() {
 function loadAffiliateUI() {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   const check = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
-  set('rakuten-affiliate-id', affiliateSettings.rakutenId);
-  set('amazon-associate-tag', affiliateSettings.amazonTag);
   check('affiliate-disabled', affiliateSettings.disabled);
-  set('nosh-url', affiliateSettings.noshUrl);
-  set('oisix-url', affiliateSettings.oisixUrl);
-  set('tsukurioki-url', affiliateSettings.tsukuriokiUrl);
   check('mealkit-cards-disabled', affiliateSettings.mealkitDisabled);
-  set('curated-products', serializeCuratedProducts(affiliateSettings.curatedProducts));
+  // 開発者モード(?dev=1)時のみ詳細フィールドを表示
+  const devMode = new URLSearchParams(window.location.search).get('dev') === '1';
+  const devSection = document.getElementById('dev-affiliate-fields');
+  if (devSection) {
+    devSection.style.display = devMode ? 'block' : 'none';
+    if (devMode) {
+      set('rakuten-affiliate-id', affiliateSettings.rakutenId);
+      set('amazon-associate-tag', affiliateSettings.amazonTag);
+      set('nosh-url', affiliateSettings.noshUrl);
+      set('oisix-url', affiliateSettings.oisixUrl);
+      set('tsukurioki-url', affiliateSettings.tsukuriokiUrl);
+      set('curated-products', serializeCuratedProducts(affiliateSettings.curatedProducts));
+    }
+  }
 }
 
 // レシピ/コンテキストに応じて厳選商品から該当するものを返す(最大2件)
