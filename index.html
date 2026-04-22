@@ -601,6 +601,7 @@
   <div class="card">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
       <h3 style="margin:0;flex:1" id="today-title">今日の献立</h3>
+      <button class="btn btn-sm btn-outline" onclick="openTodaySearch()" title="レシピを検索して今日に追加">🔍 検索</button>
       <button class="btn btn-sm" onclick="autoGenerateToday()">🎲 今日を自動生成</button>
     </div>
     <div class="mode-switch" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
@@ -849,6 +850,17 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeDetailModal()">✕</button>
     <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- ===== 今日の献立 クイック検索モーダル ===== -->
+<div id="today-search-modal" class="modal" onclick="if(event.target===this)closeTodaySearch()">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeTodaySearch()">✕</button>
+    <div class="modal-title">🔍 今日の献立に追加</div>
+    <input type="text" id="today-search-input" placeholder="レシピ名・タグで検索..." oninput="renderTodaySearchResults()" style="margin-bottom:10px">
+    <div style="font-size:.75rem;color:var(--text-light);margin-bottom:10px">タップで今日の献立に自動的にカテゴリ分け追加されます</div>
+    <div id="today-search-results" style="max-height:400px;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -1870,6 +1882,83 @@ function openSlotModal(dayIdx, slotKey) {
 function closeSlotModal() {
   document.getElementById('slot-modal').classList.remove('show');
   pendingSlotInfo = null;
+}
+
+// 今日の献立 クイック検索
+function openTodaySearch() {
+  document.getElementById('today-search-input').value = '';
+  document.getElementById('today-search-modal').classList.add('show');
+  renderTodaySearchResults();
+  setTimeout(() => document.getElementById('today-search-input').focus(), 100);
+}
+function closeTodaySearch() {
+  document.getElementById('today-search-modal').classList.remove('show');
+}
+function renderTodaySearchResults() {
+  const q = (document.getElementById('today-search-input').value || '').toLowerCase().trim();
+  let pool = getAllRecipes().filter(r => !ngRecipes.has(r.id));
+  if (q) {
+    pool = pool.filter(r =>
+      r.title.toLowerCase().includes(q) ||
+      (r.desc||'').toLowerCase().includes(q) ||
+      (r.tags||[]).some(t => t.toLowerCase().includes(q)) ||
+      (r.flavors||[]).some(f => f.toLowerCase().includes(q))
+    );
+  }
+  // レベル優先：現在のモードに合わせてソート
+  pool.sort((a,b) => {
+    const la = getRecipeLevel(a), lb = getRecipeLevel(b);
+    const pref = {limit:0, normal:1, easy:1, challenge:2};
+    if (cookingMode === 'limit') return (la==='limit'?0:2) - (lb==='limit'?0:2);
+    if (cookingMode === 'challenge') return (la==='challenge'?0:2) - (lb==='challenge'?0:2);
+    return 0;
+  });
+  pool = pool.slice(0, 50); // 上限50件
+
+  const list = document.getElementById('today-search-results');
+  if (pool.length === 0) {
+    list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px">該当なし</p>';
+    return;
+  }
+  list.innerHTML = pool.map(r => {
+    const cat = normalizeCategory(r.category);
+    const level = getRecipeLevel(r);
+    const lvBadge = level === 'limit' ? '<span class="level-badge" style="background:rgba(122,154,173,.15);color:#5a7a8d">🆘</span>'
+      : level === 'challenge' ? '<span class="level-badge" style="background:rgba(196,135,122,.15);color:#a86858">🔥</span>'
+      : '';
+    const srcLabel = SOURCE_LABELS[r.source] || r.source;
+    return `<div class="recipe-card" style="margin-bottom:8px" onclick="addRecipeToToday('${r.id}')">
+      <div class="recipe-title">${r.title}${lvBadge}</div>
+      <div class="recipe-meta">
+        <span class="recipe-tag cat">${cat}</span>
+        ${r.cookTime ? `<span class="recipe-tag time">${r.cookTime}分</span>` : ''}
+        <span class="recipe-tag">${srcLabel}</span>
+      </div>
+      ${r.desc ? `<div class="recipe-desc">${r.desc}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+function addRecipeToToday(id) {
+  const r = getRecipeById(id);
+  if (!r) return;
+  const cat = normalizeCategory(r.category);
+  let slot = null;
+  if (cat === '主食' || cat === 'ごはん・麺') slot = 'shushoku';
+  else if (cat === '主菜') slot = 'shusai';
+  else if (cat === '副菜' || cat === 'サラダ') slot = 'fukusai';
+  else if (cat === '汁物') slot = 'shirumono';
+  else slot = 'shusai'; // デフォルト
+  const todayIdx = getTodayIndex();
+  weekPlan[todayIdx][slot].push({id: r.id, title: r.title});
+  // 履歴に追加
+  recipeHistory.push({id: r.id, date: new Date().toISOString()});
+  if (recipeHistory.length > 200) recipeHistory = recipeHistory.slice(-200);
+  saveState();
+  renderTodayBoard();
+  renderWeekBoard();
+  updateNutrition();
+  showToast(`「${r.title}」を今日に追加しました`);
+  closeTodaySearch();
 }
 function setSlotSource(src, btn) {
   slotSourceFilter = src;
