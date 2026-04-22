@@ -670,6 +670,7 @@
   </div>
   <div class="header-actions">
     <a href="./blog/" class="theme-toggle-btn" title="献立ラボ(ブログ)を見る" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center">📝</a>
+    <a id="youtube-link" href="#" target="_blank" rel="noopener" class="theme-toggle-btn" title="miuの発達ライフハックちゃんねる(YouTube)" style="text-decoration:none;display:none;align-items:center;justify-content:center">📺</a>
     <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle" title="ダーク/ライトモード切替">🌙</button>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
   </div>
@@ -1063,6 +1064,13 @@ let favRecipes = new Set(); // お気に入りレシピ
 let recipeHistory = []; // レシピ使用履歴 [{id, date, slot}, ...]
 let slotSourceFilter = 'all';
 let cookingMode = 'normal'; // 'normal' | 'limit' | 'challenge'
+// チャンネル・SNS リンク(空文字のときはボタン非表示)
+const CHANNEL_LINKS = {
+  youtube: '', // 例: 'https://www.youtube.com/@miu-dev-lifehack'
+  twitter: '', // 例: 'https://x.com/miu_dev_lifehack'
+  note:    '', // 例: 'https://note.com/miu_dev_lifehack'
+};
+
 // ブログ(献立ラボ)の掲載記事メタデータ
 // 新しい記事を追加したらここに追記 → 今日タブの横スクロールに自動反映
 const BLOG_ARTICLES = [
@@ -1882,6 +1890,12 @@ window.addEventListener('DOMContentLoaded', () => {
   updateNutrition();
   updateCookingDaySelect();
   if (selectedCookingDay >= 0) generateTimeline();
+  // YouTube リンクがあればヘッダーに表示
+  const yt = document.getElementById('youtube-link');
+  if (yt && CHANNEL_LINKS.youtube) {
+    yt.href = CHANNEL_LINKS.youtube;
+    yt.style.display = 'inline-flex';
+  }
 });
 
 // ============================
