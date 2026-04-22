@@ -192,6 +192,66 @@
   .recipe-card.fav-recipe { border-color:var(--fav-gold); box-shadow:0 0 0 1px rgba(201,169,110,.15), 0 2px 12px rgba(201,169,110,.08); }
   .recipe-title { font-weight:500; font-size:.95rem; margin-bottom:4px; }
   .seasonal-badge { display:inline-block; font-size:.65rem; background:rgba(138,173,122,.12); color:var(--seasonal); padding:1px 6px; border-radius:8px; margin-left:4px; font-weight:500; }
+
+  /* 献立ラボ(ブログ記事)の横スクロールカード */
+  .blog-strip {
+    margin: 14px 0 6px;
+  }
+  .blog-strip-head {
+    display:flex; align-items:center; gap:8px; margin-bottom:10px;
+    padding:0 4px;
+  }
+  .blog-strip-title {
+    flex:1; font-size:.95rem; font-weight:600; color:var(--primary-dark);
+  }
+  .blog-strip-more {
+    font-size:.75rem; color:var(--text-light); text-decoration:none;
+  }
+  .blog-strip-more:hover { color:var(--primary); }
+  .blog-strip-scroll {
+    display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory;
+    padding:4px 4px 10px; -webkit-overflow-scrolling:touch;
+    scrollbar-width: thin;
+  }
+  .blog-strip-scroll::-webkit-scrollbar { height:6px; }
+  .blog-strip-scroll::-webkit-scrollbar-thumb { background:rgba(0,0,0,.12); border-radius:3px; }
+  .blog-article-card {
+    flex: 0 0 78%;
+    max-width: 300px;
+    scroll-snap-align: start;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    display: flex; flex-direction: column;
+  }
+  .blog-article-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,.06);
+    text-decoration: none;
+  }
+  .blog-article-cat {
+    font-size:.68rem; color:var(--primary); font-weight:600;
+    margin-bottom:6px; letter-spacing:.03em;
+  }
+  .blog-article-title {
+    font-size:.92rem; font-weight:600; line-height:1.5;
+    margin-bottom:8px; flex:1;
+  }
+  .blog-article-excerpt {
+    font-size:.76rem; color:var(--text-light); line-height:1.6;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .blog-article-meta {
+    display:flex; gap:8px; margin-top:8px; font-size:.68rem; color:var(--text-light);
+  }
+  @media (min-width: 600px) {
+    .blog-article-card { flex: 0 0 300px; }
+  }
   .level-badge { display:inline-block; font-size:.65rem; padding:1px 6px; border-radius:8px; margin-left:4px; font-weight:500; }
   .mode-btn.active { background: var(--primary); color:white; border-color: var(--primary); }
   .history-badge { display:inline-block; font-size:.65rem; color:var(--text-light); margin-left:4px; opacity:.7; }
@@ -779,7 +839,8 @@
       <button class="btn btn-sm btn-outline" onclick="clearCheckedShopping()">✓済み削除</button>
       <button class="btn btn-sm btn-outline" onclick="clearAllShopping()">全削除</button>
       <button class="btn btn-sm btn-outline" onclick="resetShoppingChecks()">チェック解除</button>
-      <button class="btn btn-sm" onclick="sendToNotion()">📝 Notionへ</button>
+      <button class="btn btn-sm" onclick="copyShoppingToClipboard()">📋 コピー</button>
+      <button class="btn btn-sm btn-outline" onclick="sendToNotion()">📝 Notionへ</button>
     </div>
     <div id="shopping-stats" style="font-size:.82rem;color:var(--text-light);margin-bottom:10px"></div>
     <div id="shopping-list"></div>
@@ -974,6 +1035,32 @@ let favRecipes = new Set(); // お気に入りレシピ
 let recipeHistory = []; // レシピ使用履歴 [{id, date, slot}, ...]
 let slotSourceFilter = 'all';
 let cookingMode = 'normal'; // 'normal' | 'limit' | 'challenge'
+// ブログ(献立ラボ)の掲載記事メタデータ
+// 新しい記事を追加したらここに追記 → 今日タブの横スクロールに自動反映
+const BLOG_ARTICLES = [
+  {
+    category: 'エッセイ',
+    title: '段取りが苦手な私が、発達障害向けの献立アプリを作った理由',
+    excerpt: '献立を考えるだけでぐったりする、買い物リストが書けない、調理中に次の手順が思い出せない。そんな自分のために作ったアプリの話です。',
+    url: './blog/posts/001-why-i-built-this.html',
+    readTime: '6分'
+  },
+  {
+    category: '研究',
+    title: 'ADHDと料理: ワーキングメモリを「外部化」するという戦略',
+    excerpt: '「料理の段取りが無理」は気合いの問題ではなく、ワーキングメモリの容量の問題です。脳の外に手順を置くことで楽になる話。',
+    url: './blog/posts/002-adhd-and-cooking.html',
+    readTime: '7分'
+  },
+  {
+    category: '実用',
+    title: '今日はこれでOK。がんばらない日の「限界レシピ」10選',
+    excerpt: '包丁を使わず、冷凍食材を鍋に放り込むだけ。まずは食べることだけ目的にした、本当に疲れた日のためのレシピ集。',
+    url: './blog/posts/003-limit-recipes.html',
+    readTime: '5分'
+  }
+];
+
 // 開発者によって埋め込まれるアフィリエイト設定(エンドユーザーには非表示)
 const DEFAULT_AFFILIATE = {
   rakutenId: '531541c1.a6283ae8.531541c2.24304e3e',
@@ -2403,11 +2490,37 @@ function renderTodayBoard() {
     html += renderMealKitCard('empty');
   }
 
+  // 献立ラボの記事を横スクロールで提示(集客)
+  html += renderBlogStrip();
+
   document.getElementById('today-board').innerHTML = html;
 
   // Show cooking button if there are recipes
   const cookCard = document.getElementById('today-cooking-card');
   if (cookCard) cookCard.style.display = hasAnyRecipe ? 'block' : 'none';
+}
+
+// ブログ記事を横スクロールカードで表示
+function renderBlogStrip() {
+  if (!BLOG_ARTICLES || BLOG_ARTICLES.length === 0) return '';
+  const cards = BLOG_ARTICLES.map(a => `
+    <a href="${a.url}" target="_blank" rel="noopener" class="blog-article-card">
+      <div class="blog-article-cat">📝 ${a.category}</div>
+      <div class="blog-article-title">${a.title}</div>
+      <div class="blog-article-excerpt">${a.excerpt}</div>
+      <div class="blog-article-meta">
+        <span>読了 ${a.readTime}</span>
+        <span>→ 続きを読む</span>
+      </div>
+    </a>
+  `).join('');
+  return `<div class="blog-strip">
+    <div class="blog-strip-head">
+      <div class="blog-strip-title">📝 献立ラボから</div>
+      <a href="./blog/" target="_blank" rel="noopener" class="blog-strip-more">すべての記事 →</a>
+    </div>
+    <div class="blog-strip-scroll">${cards}</div>
+  </div>`;
 }
 
 function autoGenerateToday() {
@@ -3790,6 +3903,47 @@ function clearAllShopping() {
 function resetShoppingChecks() {
   shoppingList.forEach(i => i.checked = false);
   saveState(); updateShoppingDisplay();
+}
+
+async function copyShoppingToClipboard() {
+  if (shoppingList.length === 0) {
+    showToast('買い物リストが空です');
+    return;
+  }
+  // 未チェック優先、チェック済みは末尾
+  const unchecked = shoppingList.filter(i => !i.checked);
+  const checked = shoppingList.filter(i => i.checked);
+  const lines = [];
+  lines.push(`🛒 買い物リスト (${new Date().toLocaleDateString('ja-JP')})`);
+  lines.push('');
+  unchecked.forEach(i => {
+    lines.push(`☐ ${i.name}${i.qty ? ' — ' + i.qty : ''}`);
+  });
+  if (checked.length > 0) {
+    lines.push('');
+    lines.push('--- 済み ---');
+    checked.forEach(i => {
+      lines.push(`☑ ${i.name}${i.qty ? ' — ' + i.qty : ''}`);
+    });
+  }
+  const text = lines.join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(`${unchecked.length}件の買い物リストをコピーしました`);
+  } catch(e) {
+    // フォールバック: テキストエリア経由でコピー
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast('買い物リストをコピーしました');
+    } catch(e2) {
+      showToast('コピーに失敗しました。ブラウザの権限を確認してください');
+    }
+    document.body.removeChild(ta);
+  }
 }
 
 function updateShoppingDisplay() {
