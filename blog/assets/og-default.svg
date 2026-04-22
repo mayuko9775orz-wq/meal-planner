@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8a9a7b"/>
+      <stop offset="100%" stop-color="#a3b396"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fefdfb"/>
+      <stop offset="100%" stop-color="#f8f6f1"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="80" y="100" width="1040" height="430" rx="32" fill="url(#card)"/>
+  <text x="600" y="260" text-anchor="middle" font-family="-apple-system, 'Hiragino Sans', sans-serif" font-size="80" font-weight="700" fill="#3d3a36">🍳 献立ラボ</text>
+  <text x="600" y="340" text-anchor="middle" font-family="-apple-system, 'Hiragino Sans', sans-serif" font-size="36" fill="#8a857d">段取りが苦手でも、料理と暮らしをちょっと楽に</text>
+  <text x="600" y="440" text-anchor="middle" font-family="-apple-system, 'Hiragino Sans', sans-serif" font-size="24" fill="#8a9a7b">ADHD・ASD当事者による料理ブログ × 献立アプリ</text>
+</svg>
