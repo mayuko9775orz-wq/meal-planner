@@ -192,6 +192,8 @@
   .recipe-card.fav-recipe { border-color:var(--fav-gold); box-shadow:0 0 0 1px rgba(201,169,110,.15), 0 2px 12px rgba(201,169,110,.08); }
   .recipe-title { font-weight:500; font-size:.95rem; margin-bottom:4px; }
   .seasonal-badge { display:inline-block; font-size:.65rem; background:rgba(138,173,122,.12); color:var(--seasonal); padding:1px 6px; border-radius:8px; margin-left:4px; font-weight:500; }
+  .level-badge { display:inline-block; font-size:.65rem; padding:1px 6px; border-radius:8px; margin-left:4px; font-weight:500; }
+  .mode-btn.active { background: var(--primary); color:white; border-color: var(--primary); }
   .history-badge { display:inline-block; font-size:.65rem; color:var(--text-light); margin-left:4px; opacity:.7; }
   .recipe-meta { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
   .recipe-tag {
@@ -600,6 +602,12 @@
       <h3 style="margin:0;flex:1" id="today-title">今日の献立</h3>
       <button class="btn btn-sm" onclick="autoGenerateToday()">🎲 今日を自動生成</button>
     </div>
+    <div class="mode-switch" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-outline mode-btn" data-mode="normal" onclick="setCookingMode('normal')">🙂 ふつうの日</button>
+      <button class="btn btn-sm btn-outline mode-btn" data-mode="limit" onclick="setCookingMode('limit')">🫧 がんばらない日</button>
+      <button class="btn btn-sm btn-outline mode-btn" data-mode="challenge" onclick="setCookingMode('challenge')">🔥 今日は凝る日</button>
+    </div>
+    <div id="mode-hint" style="font-size:.8rem;color:var(--text-light);margin-bottom:10px;display:none"></div>
     <div id="today-board"></div>
   </div>
   <div class="card" id="today-cooking-card" style="display:none">
@@ -684,6 +692,12 @@
       <button class="btn-outline btn-sm" onclick="filterByCategory('サラダ',this)">🥬 サラダ</button>
       <button class="btn-outline btn-sm" onclick="filterByCategory('主食',this)">🍚 主食</button>
       <button class="btn-outline btn-sm" onclick="filterByCategory('seasonal',this)" style="border-color:var(--seasonal);color:var(--seasonal)">🌿 旬</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="level-filters">
+      <button class="btn-outline btn-sm active" onclick="filterByLevel('all',this)">すべての難易度</button>
+      <button class="btn-outline btn-sm" onclick="filterByLevel('limit',this)" style="border-color:#7a9aad;color:#5a7a8d">🆘 限界レシピ</button>
+      <button class="btn-outline btn-sm" onclick="filterByLevel('easy',this)" style="border-color:#8aad7a;color:#6a8d5a">🫧 かんたん</button>
+      <button class="btn-outline btn-sm" onclick="filterByLevel('challenge',this)" style="border-color:#c4877a;color:#a86858">🔥 挑戦レシピ</button>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="flavor-filters">
       <button class="btn-outline btn-sm active" onclick="filterByFlavor('all',this)">すべて</button>
@@ -904,12 +918,14 @@ let notionSettings = {token:'',parentPageId:''};
 let currentSourceFilter = 'all';
 let currentCategoryFilter = 'all';
 let currentFlavorFilter = 'all';
+let currentLevelFilter = 'all';
 let pendingSlotInfo = null;
 let editingRecipeId = null;
 let ngRecipes = new Set(); // 自動生成NGレシピ
 let favRecipes = new Set(); // お気に入りレシピ
 let recipeHistory = []; // レシピ使用履歴 [{id, date, slot}, ...]
 let slotSourceFilter = 'all';
+let cookingMode = 'normal'; // 'normal' | 'limit' | 'challenge'
 
 // ============================
 // 旬の食材マップ
@@ -1104,6 +1120,30 @@ const hotcookRecipeDB = [
 ];
 
 // ============================
+// レシピDB — 限界レシピ（がんばらない日用）
+// ============================
+const limitRecipeDB = [
+  {title:'冷凍野菜の豚こま豚汁',category:'汁物',desc:'包丁を使わず、冷凍カット野菜と豚こまを鍋に放り込むだけの豚汁。疲れた日の一番の味方。',ingredients:['冷凍カット野菜ミックス/200g','豚こま切れ肉/100g','だしの素(顆粒)/小さじ2','味噌/大さじ1.5','水/500ml'],tags:['汁物','豚肉','冷凍OK','限界'],flavors:['味噌','和風だし'],cookTime:12,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','一鍋'],steps:[{text:'鍋に水とだしの素を入れて火にかける',duration:3,resource:'コンロ1'},{text:'冷凍のまま野菜と豚こまを投入',duration:1,resource:'コンロ1'},{text:'蓋をして8分煮る',duration:8,resource:'コンロ1',passive:true},{text:'火を止めて味噌を溶かす',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:3,carb:0,other:1}},
+  {title:'レンジで冷凍ブロッコリーのツナ蒸し',category:'副菜',desc:'耐熱ボウルに全部入れてレンジでチン。これで1品増える。',ingredients:['冷凍ブロッコリー/150g','ツナ缶/1缶','めんつゆ/小さじ1','ごま油/小さじ1'],tags:['副菜','冷凍OK','レンジ','限界'],flavors:['和風','ごま'],cookTime:6,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','レンジのみ','調味料3種以内'],steps:[{text:'耐熱ボウルに凍ったブロッコリー・ツナ(油も)を入れる',duration:1,resource:'手作業'},{text:'ラップして600Wで5分加熱',duration:5,resource:'レンジ',passive:true},{text:'めんつゆとごま油を加えて軽く混ぜる',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:3,carb:0,other:0}},
+  {title:'冷凍うどんの温玉のせ',category:'主食',desc:'レンジだけで完結する温玉うどん。火を一切使わない。',ingredients:['冷凍うどん/1玉','卵/1個','めんつゆ(ストレート)/大さじ3','乾燥青ねぎ/適量'],tags:['主食','うどん','冷凍OK','レンジ','限界'],flavors:['和風','めんつゆ'],cookTime:5,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','レンジのみ'],steps:[{text:'冷凍うどんを袋の表示通りレンジで加熱',duration:3,resource:'レンジ',passive:true},{text:'耐熱カップに水大さじ1と卵を入れ黄身に穴を開け、500Wで40秒',duration:1,resource:'レンジ',passive:true},{text:'うどんを器に盛りめんつゆを回しかけ、温玉と青ねぎをのせる',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:0,carb:3,other:0}},
+  {title:'ホットクック冷凍カレー',category:'主菜',desc:'冷凍野菜と冷凍肉をホットクックに入れてボタンを押すだけ。包丁ゼロ。',ingredients:['冷凍カット野菜(カレー用)/500g','冷凍鶏もも切り身/300g','カレールー/4皿分','水/300ml'],tags:['主菜','カレー','冷凍OK','ホットクック','限界'],flavors:['カレー'],cookTime:50,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','放置系'],steps:[{text:'内鍋に凍ったまま野菜・鶏肉・水を入れる',duration:2,resource:'手作業'},{text:'自動メニュー「チキンと野菜のカレー」で加熱',duration:45,resource:'ホットクック',passive:true},{text:'ルーを割り入れて混ぜ、追加加熱5分',duration:5,resource:'ホットクック',passive:true}],nutrition:{protein:3,vegetable:3,carb:2,other:0}},
+  {title:'サバ缶とカットキャベツの味噌煮',category:'主菜',desc:'サバ缶を汁ごと使う。フライパン一つで完結。',ingredients:['サバ味噌煮缶/1缶','千切りカットキャベツ/150g','冷凍カット玉ねぎ/100g','水/50ml'],tags:['主菜','サバ缶','キャベツ','限界'],flavors:['味噌'],cookTime:10,limitLevel:'limit',limitTags:['まな板不要','一鍋','調味料3種以内'],steps:[{text:'フライパンにキャベツ・冷凍玉ねぎ・水を入れ、蓋をして蒸し煮',duration:5,resource:'コンロ1',passive:true},{text:'サバ缶を汁ごと加え全体を和える',duration:3,resource:'コンロ1'},{text:'火を止める',duration:1,resource:'手作業'}],nutrition:{protein:3,vegetable:3,carb:0,other:0}},
+  {title:'冷凍シーフードとほうれん草のワンパンパスタ',category:'主食',desc:'パスタと具材を同じフライパンで茹でる。洗い物も最小限。',ingredients:['スパゲッティ/100g','冷凍シーフードミックス/150g','冷凍ほうれん草/80g','にんにくチューブ/2cm','オリーブオイル/大さじ1','塩/小さじ1/2','水/600ml'],tags:['主食','パスタ','冷凍OK','ワンパン','限界'],flavors:['オリーブオイル','にんにく','塩'],cookTime:12,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','一鍋'],steps:[{text:'フライパンに水・塩・オリーブオイル・にんにくを入れ沸かす',duration:3,resource:'コンロ1'},{text:'パスタを半分に折って投入、中火で7分',duration:7,resource:'コンロ1'},{text:'残り3分で冷凍シーフードと冷凍ほうれん草を加える',duration:3,resource:'コンロ1'},{text:'水分が残っていたら飛ばして和える',duration:1,resource:'コンロ1'}],nutrition:{protein:2,vegetable:2,carb:3,other:0}},
+  {title:'納豆キムチごはん',category:'主食',desc:'火を使わず混ぜるだけ。本当に何もできない日のための安全網。',ingredients:['ごはん/茶碗1杯','納豆/1パック','キムチ/30g','ごま油/小さじ1'],tags:['主食','納豆','キムチ','火不要','限界'],flavors:['和風','キムチ','ごま'],cookTime:2,limitLevel:'limit',limitTags:['まな板不要','調味料3種以内'],steps:[{text:'ごはんの上に納豆とキムチをのせる',duration:1,resource:'手作業'},{text:'ごま油を回しかけて軽く混ぜる',duration:1,resource:'手作業'}],nutrition:{protein:2,vegetable:1,carb:3,other:0}},
+  {title:'冷凍餃子のパリパリ焼き',category:'主菜',desc:'水入れて蓋するだけ。栄養は副菜で補うこと。',ingredients:['冷凍餃子(水・油不要タイプ)/10個','水/大さじ3','ごま油/小さじ1'],tags:['主菜','餃子','冷凍OK','限界'],flavors:['餃子'],cookTime:8,limitLevel:'limit',limitTags:['まな板不要','冷凍OK','一鍋','調味料3種以内'],steps:[{text:'フライパンに凍ったまま餃子を並べ、水を加えて蓋をする',duration:1,resource:'手作業'},{text:'中火で6分蒸し焼き',duration:6,resource:'コンロ1',passive:true},{text:'蓋を外しごま油を回して1分焼く',duration:1,resource:'コンロ1'}],nutrition:{protein:2,vegetable:1,carb:1,other:0}},
+];
+
+// ============================
+// レシピDB — 挑戦レシピ（凝る日用）
+// ============================
+const challengeRecipeDB = [
+  {title:'ビリヤニ(チキン)',category:'主食',desc:'スパイスから炊き上げる本格インド料理。2層仕込みで香り高く。気合いが入った日に。',ingredients:['バスマティライス/300g','鶏もも肉/500g','玉ねぎ/2個','トマト/2個','ヨーグルト(無糖)/150g','しょうが/1片','にんにく/2片','青唐辛子/1本','ミント/一掴み','パクチー/一掴み','クミンシード/小さじ1','カルダモン/4粒','クローブ/4粒','シナモンスティック/1本','ローリエ/2枚','ターメリック/小さじ1','ガラムマサラ/小さじ2','チリパウダー/小さじ1','サフラン/ひとつまみ','牛乳(温)/50ml','ギー(またはバター)/大さじ3','塩/適量'],tags:['主食','インド','スパイス','挑戦'],flavors:['スパイス','カルダモン','ガラムマサラ'],cookTime:120,limitLevel:'challenge',challengeTags:['本格','時間必要','複数工程','特別な食材'],steps:[{text:'バスマティライスを30分浸水',duration:30,resource:'手作業',passive:true},{text:'玉ねぎをスライスし、ギーで深い茶色になるまで15分かけて揚げ炒め',duration:15,resource:'コンロ1'},{text:'しょうが・にんにくをすりおろし、トマトを刻む',duration:5,resource:'手作業'},{text:'鶏肉にヨーグルト・スパイス半量・塩で30分マリネ',duration:30,resource:'手作業',passive:true},{text:'別の鍋で浸水したライスをホールスパイスと塩で7分下茹で(7割火入れ)',duration:10,resource:'コンロ2'},{text:'厚手鍋で鶏マリネを炒め、トマトと揚げ玉ねぎ半量を加えて煮詰める',duration:10,resource:'コンロ1'},{text:'鶏の上にライスを層にし、サフランミルク・残りの揚げ玉ねぎ・ハーブを散らす',duration:3,resource:'手作業'},{text:'蓋をして極弱火で25分蒸らし(ダム)',duration:25,resource:'コンロ1',passive:true},{text:'火を止めて10分蒸らし、全体をそっと混ぜる',duration:10,resource:'手作業',passive:true}],nutrition:{protein:4,vegetable:2,carb:4,other:1}},
+  {title:'ブッフブルギニヨン',category:'主菜',desc:'牛肉を赤ワインで3時間煮込むフランス定番。時間はかかるがほぼ放置。',ingredients:['牛すね肉(または肩ロース角切り)/800g','ベーコン塊/150g','玉ねぎ/1個','にんじん/2本','マッシュルーム/200g','にんにく/3片','赤ワイン/750ml(1本)','ビーフストック/500ml','トマトペースト/大さじ2','ブーケガルニ(タイム・ローリエ・パセリ茎)/1束','薄力粉/大さじ3','バター/30g','オリーブオイル/大さじ2','塩こしょう/適量','小玉ねぎ/12個'],tags:['主菜','フレンチ','煮込み','挑戦'],flavors:['赤ワイン','バター'],cookTime:210,limitLevel:'challenge',challengeTags:['本格','時間必要','複数工程'],steps:[{text:'牛肉を5cm角に切り塩こしょう、薄力粉をまぶす',duration:5,resource:'手作業'},{text:'ベーコンを拍子木切り、野菜を刻む',duration:8,resource:'手作業'},{text:'厚手鍋でベーコンを炒め取り出す',duration:5,resource:'コンロ1'},{text:'同じ鍋で牛肉を強火で全面焼き色をつける(数回に分けて)',duration:15,resource:'コンロ1'},{text:'玉ねぎ・にんじん・にんにくを加えて炒める',duration:8,resource:'コンロ1'},{text:'赤ワインを注ぎアルコールを飛ばす',duration:5,resource:'コンロ1'},{text:'ビーフストック・トマトペースト・ブーケガルニを加え沸騰させる',duration:5,resource:'コンロ1'},{text:'蓋をして弱火で2時間30分煮込む',duration:150,resource:'コンロ1',passive:true},{text:'別鍋でマッシュルームと小玉ねぎをバターでソテー',duration:8,resource:'コンロ2'},{text:'仕上げに加えて10分煮込み、味を整える',duration:10,resource:'コンロ1'}],nutrition:{protein:5,vegetable:3,carb:0,other:1}},
+  {title:'煮込みハンバーグ(デミ別仕込み)',category:'主菜',desc:'ハンバーグとデミグラスソースを別々に仕込む本格派。合わせて煮込むと格別。',ingredients:['合挽肉/500g','玉ねぎ(ハンバーグ用)/1個','パン粉/1カップ','牛乳/80ml','卵/1個','ナツメグ/少々','塩こしょう/適量','玉ねぎ(ソース用)/1個','マッシュルーム/150g','バター/40g','薄力粉/大さじ3','赤ワイン/200ml','デミグラスソース缶/1缶','ケチャップ/大さじ2','ウスターソース/大さじ1','ビーフストック/200ml','サラダ油/大さじ2'],tags:['主菜','洋食','ハンバーグ','挑戦'],flavors:['デミグラス','赤ワイン'],cookTime:90,limitLevel:'challenge',challengeTags:['本格','複数工程'],steps:[{text:'玉ねぎ(ハンバーグ用)をみじん切りにして炒め冷ます',duration:10,resource:'コンロ1'},{text:'パン粉を牛乳に浸す',duration:2,resource:'手作業'},{text:'挽肉・冷ました玉ねぎ・浸したパン粉・卵・ナツメグ・塩こしょうをよく練る',duration:5,resource:'手作業'},{text:'4等分して成形、空気を抜きながら中央をくぼませる',duration:4,resource:'手作業'},{text:'別フライパンで薄くスライスした玉ねぎ(ソース用)とマッシュルームをバターで炒める',duration:8,resource:'コンロ2'},{text:'薄力粉を振り入れ炒め合わせ、赤ワインで溶きのばす',duration:5,resource:'コンロ2'},{text:'デミグラス・ケチャップ・ウスター・ビーフストックを加えソースを作る',duration:5,resource:'コンロ2'},{text:'サラダ油でハンバーグを両面こんがり焼き付ける',duration:8,resource:'コンロ1'},{text:'ソースの鍋にハンバーグを移し20分煮込む',duration:20,resource:'コンロ2',passive:true}],nutrition:{protein:4,vegetable:2,carb:1,other:1}},
+  {title:'本格エビチリ',category:'主菜',desc:'エビは下処理・片栗粉で揚げ、ソースは別仕込み。中華料理店の味を自宅で。',ingredients:['ブラックタイガー/16尾(300g)','塩/小さじ1/2','酒/大さじ1','片栗粉(エビ用)/大さじ2','卵白/1個分','にんにく/2片','しょうが/1片','長ねぎ/1/2本','豆板醤/大さじ1','甜麺醤/大さじ1','ケチャップ/大さじ4','砂糖/大さじ1','酒(ソース用)/大さじ2','鶏ガラスープ/150ml','酢/小さじ1','ごま油/小さじ1','片栗粉(水溶き)/大さじ1','サラダ油/大さじ4'],tags:['主菜','中華','エビ','挑戦'],flavors:['中華','辛口'],cookTime:50,limitLevel:'challenge',challengeTags:['本格','複数工程'],steps:[{text:'エビの殻と背わたを除き、塩と片栗粉で揉んで水洗いしキッチンペーパーで拭く',duration:10,resource:'手作業'},{text:'エビに酒・塩・卵白・片栗粉の順で下味をつけ10分置く',duration:10,resource:'手作業',passive:true},{text:'にんにく・しょうが・長ねぎをみじん切り',duration:5,resource:'手作業'},{text:'ソース材料(豆板醤・甜麺醤・ケチャップ・砂糖・酒・鶏ガラスープ)を合わせておく',duration:2,resource:'手作業'},{text:'多めの油でエビを中火で2分揚げ焼きして取り出す',duration:5,resource:'コンロ1'},{text:'同じフライパンでにんにく・しょうがを香り出し、合わせ調味料を入れる',duration:3,resource:'コンロ1'},{text:'エビを戻しソースを絡めながら1分炒める',duration:2,resource:'コンロ1'},{text:'水溶き片栗粉でとろみをつけ、酢・ごま油・長ねぎで仕上げる',duration:2,resource:'コンロ1'}],nutrition:{protein:4,vegetable:1,carb:0,other:0}},
+];
+
+// ============================
 // レシピDB — 外部サイト（CORS制限のためサンプルデータ + サイトリンク）
 // ============================
 const siteRecipeDB = {
@@ -1188,6 +1228,8 @@ function getAllRecipes() {
   shushokuRecipeDB.forEach(r => all.push({...r, source:'basic', id:'b_'+r.title}));
   akariRecipeDB.forEach(r => all.push({...r, source:'akari', id:'a_'+r.title}));
   hotcookRecipeDB.forEach(r => all.push({...r, source:'hotcook', id:'h_'+r.title}));
+  limitRecipeDB.forEach(r => all.push({...r, source:'limit', id:'l_'+r.title}));
+  challengeRecipeDB.forEach(r => all.push({...r, source:'challenge', id:'c_'+r.title}));
   Object.entries(siteRecipeDB).forEach(([key, site]) => {
     site.recipes.forEach(r => all.push({...r, source:key, id:'s_'+key+'_'+r.title, siteUrl:r.url||site.baseUrl, siteName:site.name, siteColor:site.color}));
   });
@@ -1197,6 +1239,17 @@ function getAllRecipes() {
 
 function getRecipeById(id) {
   return getAllRecipes().find(r => r.id === id);
+}
+
+// レシピの難易度レベルを返す。明示的な limitLevel があればそれ、なければ時間・手数から推測
+function getRecipeLevel(recipe) {
+  if (!recipe) return 'normal';
+  if (recipe.limitLevel) return recipe.limitLevel;
+  const time = recipe.cookTime || 20;
+  const stepCount = (recipe.steps || []).length;
+  if (time <= 15 && stepCount <= 5) return 'easy';
+  if (time >= 90 || stepCount >= 9) return 'challenge';
+  return 'normal';
 }
 
 function normalizeCategory(cat) {
@@ -1231,6 +1284,7 @@ function saveState() {
   localStorage.setItem('v3_cookday', selectedCookingDay);
   localStorage.setItem('v3_ng', JSON.stringify([...ngRecipes]));
   localStorage.setItem('v3_fav', JSON.stringify([...favRecipes]));
+  localStorage.setItem('v3_mode', cookingMode);
   localStorage.setItem('v3_history', JSON.stringify(recipeHistory));
 }
 function loadState() {
@@ -1254,7 +1308,35 @@ function loadState() {
     if (hist) recipeHistory = JSON.parse(hist);
     // 履歴は最大200件まで保持
     if (recipeHistory.length > 200) recipeHistory = recipeHistory.slice(-200);
+    const mode = localStorage.getItem('v3_mode');
+    if (mode) cookingMode = mode;
   } catch(e) { console.error('loadState error', e); }
+}
+
+// 調理モード切替
+function setCookingMode(mode) {
+  cookingMode = mode;
+  saveState();
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+    if (b.dataset.mode === mode) {
+      b.classList.remove('btn-outline');
+    } else {
+      b.classList.add('btn-outline');
+    }
+  });
+  const hint = document.getElementById('mode-hint');
+  if (hint) {
+    if (mode === 'limit') {
+      hint.style.display = 'block';
+      hint.textContent = '🫧 今日はこれでOK。無理しないでね。限界レシピを優先的に提案します。';
+    } else if (mode === 'challenge') {
+      hint.style.display = 'block';
+      hint.textContent = '🔥 気合いの入る日。時間をかけて作る本格レシピを提案します。';
+    } else {
+      hint.style.display = 'none';
+    }
+  }
 }
 function loadNotionSettings() {
   try {
@@ -1280,6 +1362,7 @@ function saveNotionSettings() {
 window.addEventListener('DOMContentLoaded', () => {
   loadState();
   loadNotionSettings();
+  setCookingMode(cookingMode);
   renderTodayBoard();
   renderWeekBoard();
   renderRecipeList();
@@ -1865,8 +1948,29 @@ function autoGenerateToday() {
   const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
   const recentIds = new Set(recipeHistory.filter(h => new Date(h.date).getTime() > twoWeeksAgo).map(h => h.id));
 
+  // モード別のレシピフィルタリング
+  function filterByMode(pool) {
+    if (cookingMode === 'limit') {
+      const limits = pool.filter(r => getRecipeLevel(r) === 'limit');
+      if (limits.length > 0) return limits;
+      const easy = pool.filter(r => getRecipeLevel(r) === 'easy');
+      return easy.length > 0 ? easy : pool.filter(r => getRecipeLevel(r) !== 'challenge');
+    }
+    if (cookingMode === 'challenge') {
+      const ch = pool.filter(r => getRecipeLevel(r) === 'challenge');
+      if (ch.length > 0) return ch;
+      return pool.filter(r => getRecipeLevel(r) === 'normal' || (r.cookTime && r.cookTime >= 40));
+    }
+    // normal: 両極を除外
+    return pool.filter(r => {
+      const lv = getRecipeLevel(r);
+      return lv !== 'limit' && lv !== 'challenge';
+    });
+  }
+
   function pickOne(pool) {
-    let available = pool;
+    let available = filterByMode(pool);
+    if (available.length === 0) available = pool;
     if (favRecipes.size > 0 && Math.random() < 0.4) {
       const favPool = available.filter(r => favRecipes.has(r.id));
       if (favPool.length > 0) available = favPool;
@@ -1875,7 +1979,6 @@ function autoGenerateToday() {
       const fresh = available.filter(r => !recentIds.has(r.id));
       if (fresh.length > 0) available = fresh;
     }
-    if (available.length === 0) available = pool;
     return available[Math.floor(Math.random() * available.length)];
   }
 
@@ -1956,6 +2059,9 @@ function renderRecipeList() {
   if (currentFlavorFilter !== 'all') {
     filtered = filtered.filter(r => (r.flavors||[]).includes(currentFlavorFilter));
   }
+  if (currentLevelFilter !== 'all') {
+    filtered = filtered.filter(r => getRecipeLevel(r) === currentLevelFilter);
+  }
   if (q) filtered = filtered.filter(r =>
     r.title.toLowerCase().includes(q) || r.desc?.toLowerCase().includes(q) ||
     (r.tags||[]).some(t => t.toLowerCase().includes(q)) ||
@@ -1979,9 +2085,17 @@ function renderRecipeList() {
     const daysAgo = getRecipeHistoryDaysAgo(r.id);
     const historyLabel = daysAgo >= 0 && daysAgo <= 30 ? `<span class="history-badge">前回: ${daysAgo}日前</span>` : '';
     const seasonalLabel = isSeasonal ? '<span class="seasonal-badge">旬</span>' : '';
+    const level = getRecipeLevel(r);
+    const levelBadge = level === 'limit'
+      ? '<span class="level-badge" style="background:rgba(122,154,173,.15);color:#5a7a8d">🆘 限界</span>'
+      : level === 'challenge'
+        ? '<span class="level-badge" style="background:rgba(196,135,122,.15);color:#a86858">🔥 挑戦</span>'
+        : level === 'easy'
+          ? '<span class="level-badge" style="background:rgba(138,173,122,.15);color:#6a8d5a">🫧 かんたん</span>'
+          : '';
     return `<div class="recipe-card${isNG ? ' ng-recipe' : ''}${isFav ? ' fav-recipe' : ''}" onclick="showRecipeDetail('${r.id}')">
       <div style="display:flex;align-items:center;gap:6px">
-        <div class="recipe-title" style="flex:1">${isNG ? '🚫 ' : ''}${r.title}${seasonalLabel}${historyLabel}</div>
+        <div class="recipe-title" style="flex:1">${isNG ? '🚫 ' : ''}${r.title}${levelBadge}${seasonalLabel}${historyLabel}</div>
         <button class="btn-fav${isFav ? ' active' : ''}" onclick="event.stopPropagation();toggleFav('${r.id}')" title="お気に入り">${isFav ? '⭐' : '☆'}</button>
         <button class="btn btn-sm ${isNG ? 'btn-danger' : 'btn-outline'}" onclick="event.stopPropagation();toggleNG('${r.id}')" style="font-size:.7rem;padding:3px 8px;white-space:nowrap" title="自動生成から除外/復帰">${isNG ? 'NG解除' : 'NG'}</button>
       </div>
@@ -2043,6 +2157,14 @@ function filterByCategory(cat, btn) {
     btn.style.background = 'var(--seasonal)';
     btn.style.color = 'white';
   }
+  renderRecipeList();
+}
+function filterByLevel(level, btn) {
+  currentLevelFilter = level;
+  document.querySelectorAll('#level-filters .btn-outline').forEach(b => {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
   renderRecipeList();
 }
 function filterByFlavor(flavor, btn) {
