@@ -925,6 +925,17 @@
       📴 宅配提案カードを表示しない
     </label>
 
+    <h4 style="margin:20px 0 8px;font-size:.85rem">💎 厳選商品リンク(任意)</h4>
+    <div style="font-size:.72rem;color:var(--text-light);margin-bottom:8px;line-height:1.5">
+      自分が実際に使って推せる商品のアフィリエイトURLを登録できます。<br>
+      レシピやモードの文脈に合致したときに「あると便利」として表示されます。<br>
+      1行1商品、<strong>「商品名 | タグ(カンマ区切り) | URL」</strong>の形式。<br>
+      タグ例: <code>ホットクック</code> <code>限界</code> <code>挑戦</code> <code>冷凍</code> <code>オーブン</code> <code>一般</code>
+    </div>
+    <textarea id="curated-products" rows="5" placeholder="例:
+ホットクック KN-HW10G | ホットクック,一人暮らし | https://hb.afl.rakuten.co.jp/ichiba/...
+ミニ冷蔵庫 50L | 限界,冷凍,一人暮らし | https://hb.afl.rakuten.co.jp/ichiba/..." style="width:100%;font-family:inherit;font-size:.8rem"></textarea>
+
     <button class="btn" onclick="saveAffiliateSettings()" style="width:100%;margin-top:12px">保存</button>
   </div>
 </div>
@@ -961,7 +972,7 @@ let favRecipes = new Set(); // お気に入りレシピ
 let recipeHistory = []; // レシピ使用履歴 [{id, date, slot}, ...]
 let slotSourceFilter = 'all';
 let cookingMode = 'normal'; // 'normal' | 'limit' | 'challenge'
-let affiliateSettings = {rakutenId:'', amazonTag:'', disabled:false, noshUrl:'', oisixUrl:'', tsukuriokiUrl:'', mealkitDisabled:false};
+let affiliateSettings = {rakutenId:'', amazonTag:'', disabled:false, noshUrl:'', oisixUrl:'', tsukuriokiUrl:'', mealkitDisabled:false, curatedProducts:[]};
 
 // ============================
 // 旬の食材マップ
@@ -1354,6 +1365,23 @@ function loadState() {
 // ============================
 // アフィリエイトリンク
 // ============================
+function parseCuratedProducts(raw) {
+  if (!raw) return [];
+  return raw.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+    const parts = line.split('|').map(p => p.trim());
+    if (parts.length < 3) return null;
+    return {
+      name: parts[0],
+      tags: parts[1].split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
+      url: parts[2]
+    };
+  }).filter(Boolean);
+}
+
+function serializeCuratedProducts(products) {
+  return (products||[]).map(p => `${p.name} | ${(p.tags||[]).join(',')} | ${p.url}`).join('\n');
+}
+
 function saveAffiliateSettings() {
   affiliateSettings = {
     rakutenId: (document.getElementById('rakuten-affiliate-id').value || '').trim(),
@@ -1362,7 +1390,8 @@ function saveAffiliateSettings() {
     noshUrl: (document.getElementById('nosh-url').value || '').trim(),
     oisixUrl: (document.getElementById('oisix-url').value || '').trim(),
     tsukuriokiUrl: (document.getElementById('tsukurioki-url').value || '').trim(),
-    mealkitDisabled: document.getElementById('mealkit-cards-disabled').checked
+    mealkitDisabled: document.getElementById('mealkit-cards-disabled').checked,
+    curatedProducts: parseCuratedProducts(document.getElementById('curated-products').value)
   };
   localStorage.setItem('v3_affiliate', JSON.stringify(affiliateSettings));
   showToast('アフィリエイト設定を保存しました');
@@ -1382,6 +1411,53 @@ function loadAffiliateUI() {
   set('oisix-url', affiliateSettings.oisixUrl);
   set('tsukurioki-url', affiliateSettings.tsukuriokiUrl);
   check('mealkit-cards-disabled', affiliateSettings.mealkitDisabled);
+  set('curated-products', serializeCuratedProducts(affiliateSettings.curatedProducts));
+}
+
+// レシピ/コンテキストに応じて厳選商品から該当するものを返す(最大2件)
+function findCuratedProducts(contextTags) {
+  if (affiliateSettings.disabled) return [];
+  const products = affiliateSettings.curatedProducts || [];
+  if (products.length === 0) return [];
+  const ctx = (contextTags||[]).map(t => String(t).toLowerCase());
+  // スコアリング: タグ一致数が多い順、一致0でも「一般」タグ付きは候補
+  const scored = products.map(p => {
+    const overlap = p.tags.filter(t => ctx.includes(t)).length;
+    const isGeneral = p.tags.includes('一般');
+    return { product: p, score: overlap + (isGeneral ? 0.1 : 0) };
+  }).filter(s => s.score > 0);
+  scored.sort((a,b) => b.score - a.score);
+  return scored.slice(0, 2).map(s => s.product);
+}
+
+// レシピからコンテキストタグを導出
+function getRecipeContextTags(recipe) {
+  const tags = [];
+  if (!recipe) return tags;
+  if (recipe.source === 'hotcook' || (recipe.steps||[]).some(s => s.resource === 'ホットクック')) tags.push('ホットクック');
+  const level = getRecipeLevel(recipe);
+  if (level === 'limit') tags.push('限界','冷凍');
+  if (level === 'challenge') tags.push('挑戦');
+  if ((recipe.steps||[]).some(s => s.resource === 'オーブン')) tags.push('オーブン');
+  if ((recipe.tags||[]).some(t => /冷凍/.test(t))) tags.push('冷凍');
+  if ((recipe.limitTags||[]).some(t => /冷凍/.test(t))) tags.push('冷凍');
+  tags.push('一般');
+  return tags;
+}
+
+function renderCuratedProductCards(tags, title) {
+  const products = findCuratedProducts(tags);
+  if (products.length === 0) return '';
+  const cards = products.map(p => `
+    <a href="${p.url}" target="_blank" rel="noopener noreferrer sponsored" style="display:block;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px;text-decoration:none;color:var(--text);transition:transform .15s">
+      <div style="font-weight:600;font-size:.85rem">💎 ${p.name}</div>
+      <div style="font-size:.7rem;color:var(--text-light);margin-top:2px">${(p.tags||[]).slice(0,3).join(' · ')}</div>
+    </a>
+  `).join('');
+  return `<div style="margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(201,169,110,.06);border:1px dashed var(--border)">
+    <div style="font-size:.78rem;font-weight:600;margin-bottom:8px;color:var(--primary-dark)">${title} <span style="font-size:.6rem;opacity:.5;font-weight:normal">PR</span></div>
+    ${cards}
+  </div>`;
 }
 
 // 材料名からアフィリエイト検索URLを生成
@@ -2167,6 +2243,9 @@ function renderTodayBoard() {
   // 宅配提案カード：がんばらない日モード or 献立が空の時
   if (cookingMode === 'limit') {
     html += renderMealKitCard('limit');
+    html += renderCuratedProductCards(['限界','冷凍','一般'], '💎 疲れた日に助けてくれるもの');
+  } else if (cookingMode === 'challenge') {
+    html += renderCuratedProductCards(['挑戦','一般'], '💎 本気で作る日のおすすめ');
   } else if (!hasAnyRecipe) {
     html += renderMealKitCard('empty');
   }
@@ -2458,6 +2537,7 @@ function showRecipeDetail(id) {
     }).join('')}</ul>
     <h4 style="font-size:.9rem;margin-bottom:6px">手順</h4>
     <ol style="margin:0 0 14px 18px;font-size:.88rem;line-height:1.6">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+    ${renderCuratedProductCards(getRecipeContextTags(r), '💎 このレシピで愛用しているもの')}
     ${renderRecipeGearCard(r)}
   `;
   document.getElementById('detail-modal').classList.add('show');
