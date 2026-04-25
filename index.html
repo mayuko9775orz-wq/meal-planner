@@ -1029,6 +1029,20 @@
     </div>
 
     <button class="btn" onclick="saveAffiliateSettings()" style="width:100%;margin-top:12px">保存</button>
+
+    <h4 style="margin:28px 0 8px;font-size:.9rem">🧹 データリセット</h4>
+    <div style="font-size:.72rem;color:var(--text-light);margin-bottom:10px;line-height:1.6">
+      不要になったデータを削除できます。各ボタンは確認ダイアログが出ます。
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn btn-sm btn-outline" onclick="resetWeekPlanFromSettings()">📅 週間献立をリセット</button>
+      <button class="btn btn-sm btn-outline" onclick="resetShoppingFromSettings()">🛒 買い物リストをリセット</button>
+      <button class="btn btn-sm btn-outline" onclick="resetFavoritesFromSettings()">⭐ お気に入りをリセット</button>
+      <button class="btn btn-sm btn-outline" onclick="resetNGFromSettings()">🚫 NGレシピをリセット</button>
+      <button class="btn btn-sm btn-outline" onclick="resetHistoryFromSettings()">📜 使用履歴をリセット</button>
+      <button class="btn btn-sm btn-outline" onclick="resetMyRecipesFromSettings()">📖 マイレシピを全削除</button>
+      <button class="btn btn-sm btn-danger" onclick="resetAllFromSettings()" style="margin-top:6px">⚠️ すべてのデータをリセット</button>
+    </div>
   </div>
 </div>
 
@@ -1126,7 +1140,13 @@ const DEFAULT_AFFILIATE = {
     {name:'勝間式 超ロジカル家事(勝間和代)', tags:['書籍','家事','時短','一般'], url:'https://hb.afl.rakuten.co.jp/ichiba/53155dde.d4ebc3b0.53155ddf.956083b7/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbook%2F14779049%2F'},
     {name:'人づきあいはコスパで考えるとうまくいく(勝間和代)', tags:['書籍','コミュニケーション','adhd','発達障害'], url:'https://hb.afl.rakuten.co.jp/ichiba/53155dde.d4ebc3b0.53155ddf.956083b7/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbook%2F18142534%2F'},
     {name:'い・ろ・は・す ラベルレス 24本', tags:['水分補給','備蓄','限界','熱中症','一般'], url:'https://hb.afl.rakuten.co.jp/ichiba/531564b3.abbca0ab.531564b4.ab002e4f/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fsoukaidrink%2F4902102139410%2F'},
-    {name:'サントリー金麦 糖質75%オフ 48本(晩酌健康派)', tags:['晩酌','挑戦','大人'], url:'https://hb.afl.rakuten.co.jp/ichiba/531567d4.3770b7c2.531567d5.9b260c60/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fliquor-boss%2F09094c2%2F'}
+    {name:'サントリー金麦 糖質75%オフ 48本(晩酌健康派)', tags:['晩酌','挑戦','大人'], url:'https://hb.afl.rakuten.co.jp/ichiba/531567d4.3770b7c2.531567d5.9b260c60/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fliquor-boss%2F09094c2%2F'},
+    // パスタ・イタリアン関連(楽天検索アフィ仮リンク。個別商品URLが届いたら差し替え)
+    {name:'ガロファロ パスタ(ナポリ・グラニャーノ産)', tags:['イタリアン','パスタ'], url:'https://hb.afl.rakuten.co.jp/ichiba/531541c1.a6283ae8.531541c2.24304e3e/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%E3%82%AC%E3%83%AD%E3%83%95%E3%82%A1%E3%83%AD%2F'},
+    {name:'パルミジャーノ・レッジャーノ(本格チーズ)', tags:['イタリアン','パスタ','チーズ'], url:'https://hb.afl.rakuten.co.jp/ichiba/531541c1.a6283ae8.531541c2.24304e3e/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%E3%83%91%E3%83%AB%E3%83%9F%E3%82%B8%E3%83%A3%E3%83%BC%E3%83%8E%E3%83%AC%E3%83%83%E3%82%B8%E3%83%A3%E3%83%BC%E3%83%8E%2F'},
+    {name:'ペコリーノロマーノ(羊乳チーズ)', tags:['イタリアン','パスタ','チーズ'], url:'https://hb.afl.rakuten.co.jp/ichiba/531541c1.a6283ae8.531541c2.24304e3e/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%E3%83%9A%E3%82%B3%E3%83%AA%E3%83%BC%E3%83%8E%E3%83%AD%E3%83%9E%E3%83%BC%E3%83%8E%2F'},
+    {name:'グアンチャーレ(豚頬肉、本格カルボナーラ用)', tags:['イタリアン','パスタ'], url:'https://hb.afl.rakuten.co.jp/ichiba/531541c1.a6283ae8.531541c2.24304e3e/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%E3%82%B0%E3%82%A2%E3%83%B3%E3%83%81%E3%83%A3%E3%83%BC%E3%83%AC%2F'},
+    {name:'エキストラバージンオリーブオイル(良品)', tags:['イタリアン','一般'], url:'https://hb.afl.rakuten.co.jp/ichiba/531541c1.a6283ae8.531541c2.24304e3e/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%E3%82%A8%E3%82%AD%E3%82%B9%E3%83%88%E3%83%A9%E3%83%90%E3%83%BC%E3%82%B8%E3%83%B3%E3%82%AA%E3%83%AA%E3%83%BC%E3%83%96%E3%82%AA%E3%82%A4%E3%83%AB%2F'}
   ]
 };
 let affiliateSettings = {...DEFAULT_AFFILIATE};
@@ -1660,6 +1680,10 @@ function getRecipeContextTags(recipe) {
   if ((recipe.tags||[]).some(t => /圧力鍋/.test(t))) tags.push('圧力鍋');
   if ((recipe.tags||[]).some(t => /冷凍/.test(t))) tags.push('冷凍');
   if ((recipe.limitTags||[]).some(t => /冷凍/.test(t))) tags.push('冷凍');
+  // ジャンルタグ: パスタ等カテゴリ商品が広く露出するように
+  ['イタリアン','中華','和食','洋食','フレンチ','エスニック','韓国','インド','パスタ','カレー','スープ'].forEach(genre => {
+    if ((recipe.tags||[]).includes(genre)) tags.push(genre);
+  });
   tags.push('一般');
   return tags;
 }
@@ -1877,6 +1901,53 @@ function loadNotionSettings() {
   if (t) t.value = notionSettings.token || '';
   if (p) p.value = notionSettings.parentPageId || '';
 }
+// 各種データリセット
+function resetWeekPlanFromSettings() {
+  if (!confirm('週間献立を全クリアします。よろしいですか?')) return;
+  weekPlan = DAYS.map(() => ({shushoku:[],shusai:[],fukusai:[],shirumono:[],locked:false}));
+  saveState(); renderTodayBoard(); renderWeekBoard(); updateNutrition();
+  showToast('週間献立をリセットしました');
+}
+function resetShoppingFromSettings() {
+  if (!confirm('買い物リストを全削除します。よろしいですか?')) return;
+  shoppingList = [];
+  saveState(); updateShoppingDisplay();
+  showToast('買い物リストをリセットしました');
+}
+function resetFavoritesFromSettings() {
+  if (!confirm('お気に入りレシピをすべて解除します。よろしいですか?')) return;
+  favRecipes = new Set();
+  saveState(); renderRecipeList();
+  showToast('お気に入りをリセットしました');
+}
+function resetNGFromSettings() {
+  if (!confirm('NGレシピ設定をすべて解除します。よろしいですか?')) return;
+  ngRecipes = new Set();
+  saveState(); renderRecipeList();
+  showToast('NGレシピをリセットしました');
+}
+function resetHistoryFromSettings() {
+  if (!confirm('使用履歴をクリアします。よろしいですか?')) return;
+  recipeHistory = [];
+  localStorage.setItem('v3_history', '[]');
+  saveState(); renderRecipeList();
+  showToast('使用履歴をリセットしました');
+}
+function resetMyRecipesFromSettings() {
+  if (!confirm('マイレシピをすべて削除します。元に戻せません。本当によろしいですか?')) return;
+  myRecipes = [];
+  saveState(); renderRecipeList();
+  showToast('マイレシピを全削除しました');
+}
+function resetAllFromSettings() {
+  if (!confirm('⚠️ すべてのアプリデータをリセットします。\n\n・週間献立\n・買い物リスト\n・お気に入り/NG/履歴\n・マイレシピ\n・モード/テーマ設定\n\n元に戻せません。本当によろしいですか?')) return;
+  if (!confirm('最終確認: 本当に全データを削除しますか?')) return;
+  // localStorage の v3_* をすべて削除
+  Object.keys(localStorage).filter(k => k.startsWith('v3_')).forEach(k => localStorage.removeItem(k));
+  showToast('すべてのデータをリセットしました。リロードします…');
+  setTimeout(() => location.reload(), 800);
+}
+
 function saveNotionSettings() {
   notionSettings.token = document.getElementById('notion-token').value;
   notionSettings.parentPageId = document.getElementById('notion-page-id').value;
